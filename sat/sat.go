@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -81,14 +82,31 @@ func (s *sat) execFromStdin() error {
 
 	input := scanner.Bytes()
 
-	result, err := s.exec(input).Then()
+	// construct a fake HTTP request from the input
+	req := request.CoordinatedRequest{
+		Method:      http.MethodPost,
+		URL:         "/",
+		ID:          uuid.New().String(),
+		Body:        input,
+		Headers:     map[string]string{},
+		RespHeaders: map[string]string{},
+		Params:      map[string]string{},
+		State:       map[string][]byte{},
+	}
+
+	reqJSON, _ := req.ToJSON()
+
+	result, err := s.exec(reqJSON).Then()
 	if err != nil {
 		return errors.Wrap(err, "failed to exec")
 	}
 
-	output := result.([]byte)
+	resp := request.CoordinatedResponse{}
+	if err := json.Unmarshal(result.([]byte), &resp); err != nil {
+		return errors.Wrap(err, "failed to Unmarshal response")
+	}
 
-	fmt.Print(string(output))
+	fmt.Print(string(resp.Output))
 
 	return nil
 }
