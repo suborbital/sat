@@ -1,9 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -31,14 +32,19 @@ func main() {
 	runnableName := strings.TrimSuffix(filepath.Base(modulePath), ".wasm")
 
 	// choose a random port above 1000
-	randPort := rand.Intn(10000) + 1000
+	randPort, err := rand.Int(rand.Reader, big.NewInt(10000))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	port := randPort.Int64() + 1000
 
 	r := rt.New()
 	t := websocket.New()
 	g := grav.New(
 		grav.UseTransport(t),
 		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(fmt.Sprintf("%d", randPort), "/meta/message"),
+		grav.UseEndpoint(fmt.Sprintf("%d", int(port)), "/meta/message"),
 	)
 
 	exec := r.Register(runnableName, rwasm.NewRunner(modulePath), rt.Autoscale(0))
@@ -46,7 +52,7 @@ func main() {
 
 	v := vk.New(
 		vk.UseAppName(runnableName),
-		vk.UseHTTPPort(randPort),
+		vk.UseHTTPPort(int(port)),
 	)
 
 	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())

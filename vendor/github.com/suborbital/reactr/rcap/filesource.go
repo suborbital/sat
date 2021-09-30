@@ -1,11 +1,5 @@
 package rcap
 
-import "github.com/pkg/errors"
-
-var (
-	ErrFileFuncNotSet = errors.New("file func not set")
-)
-
 // StaticFileFunc is a function that returns the contents of a requested file
 type StaticFileFunc func(string) ([]byte, error)
 
@@ -43,7 +37,7 @@ func (d *defaultFileSource) GetStatic(filename string) ([]byte, error) {
 	}
 
 	if d.staticFileFunc == nil {
-		return nil, ErrFileFuncNotSet
+		return nil, ErrCapabilityNotEnabled
 	}
 
 	return d.staticFileFunc(filename)

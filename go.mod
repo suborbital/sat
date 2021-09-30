@@ -5,11 +5,12 @@ go 1.17
 require (
 	github.com/pkg/errors v0.9.1
 	github.com/suborbital/grav v0.4.1
-	github.com/suborbital/reactr v0.12.0
+	github.com/suborbital/reactr v0.12.1-0.20210929205224-1ad0ace4a6a9
 	github.com/suborbital/vektor v0.5.0
 )
 
 require (
+	github.com/bytecodealliance/wasmtime-go v0.30.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-redis/redis/v8 v8.11.3 // indirect
