@@ -2,12 +2,14 @@ package main
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -20,39 +22,51 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-type sat struct {
-	r *rt.Reactr
-	v *vk.Server
-	g *grav.Grav
-}
-
 func main() {
 	args := os.Args
-	modulePath := args[0]
-	runnableName := strings.TrimSuffix(filepath.Base(modulePath), ".wasm")
-
-	// choose a random port above 1000
-	randPort, err := rand.Int(rand.Reader, big.NewInt(10000))
-	if err != nil {
-		log.Fatal(err)
+	if len(args) != 2 {
+		log.Fatal("missing argument: module path")
 	}
 
-	port := randPort.Int64() + 1000
+	modulePath := args[1]
+	runnableName := strings.TrimSuffix(filepath.Base(modulePath), ".wasm")
+
+	port, ok := os.LookupEnv("SAT_HTTP_PORT")
+	if !ok {
+		// choose a random port above 1000
+		randPort, err := rand.Int(rand.Reader, big.NewInt(10000))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		port = fmt.Sprintf("%d", randPort.Int64()+1000)
+	}
+
+	portInt, _ := strconv.Atoi(port)
 
 	r := rt.New()
 	t := websocket.New()
 	g := grav.New(
 		grav.UseTransport(t),
 		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(fmt.Sprintf("%d", int(port)), "/meta/message"),
+		grav.UseEndpoint(port, "/meta/message"),
 	)
 
-	exec := r.Register(runnableName, rwasm.NewRunner(modulePath), rt.Autoscale(0))
+	exec := r.Register(
+		runnableName,
+		rwasm.NewRunner(modulePath),
+		rt.Autoscale(0),
+		rt.MaxRetries(0),
+		rt.RetrySeconds(0),
+		rt.PreWarm(),
+	)
+
 	r.Listen(g.Connect(), runnableName)
 
 	v := vk.New(
 		vk.UseAppName(runnableName),
-		vk.UseHTTPPort(int(port)),
+		vk.UseHTTPPort(portInt),
+		vk.UseEnvPrefix("SAT"),
 	)
 
 	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())
@@ -64,26 +78,24 @@ func main() {
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
-		result, err := exec(req).Then()
+		reqJSON, _ := req.ToJSON()
+
+		result, err := exec(reqJSON).Then()
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to exec"))
 			return nil, vk.Wrap(http.StatusTeapot, err)
 		}
 
-		return result, nil
+		resp := request.CoordinatedResponse{}
+		if err := json.Unmarshal(result.([]byte), &resp); err != nil {
+			ctx.Log.Error(errors.Wrap(err, "failed to Unmarshal resp"))
+			return nil, vk.E(http.StatusInternalServerError, "unknown error")
+		}
+
+		return resp.Output, nil
 	})
 
-	sat := &sat{
-		r: r,
-		v: v,
-		g: g,
-	}
-
-	if err := sat.serve(); err != nil {
+	if err := v.Start(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func (s *sat) serve() error {
-	return s.v.Start()
 }
