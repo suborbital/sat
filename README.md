@@ -31,7 +31,14 @@ echo "world" | .bin/sat --stdin ./testmodule/hello-echo.wasm
 ```
 Sat will write the response to stdout and exit.
 
-### More details
-Sat's only 'fancy' feature is the ability to create a mesh with other instances using local network discovery and websockets. By default, Sat starts on a random port, and listens for requests from its peers. In the future, this will enable some very interesting network topologies and potentially an integration with Atmo, but for now we are focused on being tiny and fast.
+### Run from URL
+If you provide a URL as the path argument to Sat, it will download the module from that URL, write it to a temp directory, and use it for execution:
+```bash
+sat "https://github.com/suborbital/reactr/blob/main/rwasm/testdata/hello-echo/hello-echo.wasm?raw=true"
+```
+The URL must be HTTPS and must have a `.wasm` suffix (excluding query parameters)
+
+### One day...
+Sat has the ability to create a mesh with other instances using local network discovery and websockets. By default, Sat starts on a random port, and listens for requests from its peers. In the future, this will enable some very interesting network topologies and potentially an integration with Atmo, but for now we are focused on being tiny and fast.
 
 Copyright Suborbital contributors 2021.

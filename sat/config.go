@@ -40,6 +40,15 @@ func configFromArgs(args []string) (*config, error) {
 		}
 	}
 
+	if isURL(modulePath) {
+		tmpFile, err := downloadFromURL(modulePath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to downloadFromURL")
+		}
+
+		modulePath = tmpFile
+	}
+
 	runnableName := strings.TrimSuffix(filepath.Base(modulePath), ".wasm")
 
 	port, ok := os.LookupEnv("SAT_HTTP_PORT")
