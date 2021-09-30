@@ -19,4 +19,16 @@ Sat's only 'fancy' feature is the ability to create a mesh with other instances 
 
 Note that statically compiling Sat on macOS is not currently possible, so it is Linux-only for now.
 
+As an alternative to running Sat as a server, you can also use it in `stdin` mode. First, build Sat:
+```bash
+make sat
+OR
+make sat/dynamic #on macOS
+```
+Then, run Sat with an input on stdin:
+```bash
+echo "world" | .bin/sat --stdin ./testmodule/hello-echo.wasm
+```
+Sat will write the response to stdout and exit.
+
 Copyright Suborbital contributors 2021.
