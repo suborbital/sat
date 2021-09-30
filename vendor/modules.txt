@@ -1,0 +1,85 @@
+# github.com/cespare/xxhash/v2 v2.1.1
+## explicit; go 1.11
+github.com/cespare/xxhash/v2
+# github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f
+## explicit
+github.com/dgryski/go-rendezvous
+# github.com/go-redis/redis/v8 v8.11.3
+## explicit; go 1.13
+github.com/go-redis/redis/v8
+github.com/go-redis/redis/v8/internal
+github.com/go-redis/redis/v8/internal/hashtag
+github.com/go-redis/redis/v8/internal/hscan
+github.com/go-redis/redis/v8/internal/pool
+github.com/go-redis/redis/v8/internal/proto
+github.com/go-redis/redis/v8/internal/rand
+github.com/go-redis/redis/v8/internal/util
+# github.com/google/uuid v1.3.0
+## explicit
+github.com/google/uuid
+# github.com/gorilla/websocket v1.4.2
+## explicit; go 1.12
+github.com/gorilla/websocket
+# github.com/julienschmidt/httprouter v1.3.0
+## explicit; go 1.7
+github.com/julienschmidt/httprouter
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# github.com/schollz/peerdiscovery v1.6.1
+## explicit; go 1.13
+github.com/schollz/peerdiscovery
+# github.com/sethvargo/go-envconfig v0.3.2
+## explicit; go 1.14
+github.com/sethvargo/go-envconfig
+# github.com/suborbital/grav v0.4.1
+## explicit; go 1.14
+github.com/suborbital/grav/discovery/local
+github.com/suborbital/grav/grav
+github.com/suborbital/grav/transport/websocket
+# github.com/suborbital/reactr v0.12.0
+## explicit; go 1.17
+github.com/suborbital/reactr/rcap
+github.com/suborbital/reactr/request
+github.com/suborbital/reactr/rt
+github.com/suborbital/reactr/rwasm
+github.com/suborbital/reactr/rwasm/moduleref
+# github.com/suborbital/vektor v0.5.0
+## explicit; go 1.16
+github.com/suborbital/vektor/vk
+github.com/suborbital/vektor/vlog
+# github.com/wasmerio/wasmer-go v1.0.4
+## explicit; go 1.14
+github.com/wasmerio/wasmer-go/wasmer
+github.com/wasmerio/wasmer-go/wasmer/packaged/include
+github.com/wasmerio/wasmer-go/wasmer/packaged/lib
+github.com/wasmerio/wasmer-go/wasmer/packaged/lib/darwin-amd64
+github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-aarch64
+github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-amd64
+# golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+## explicit; go 1.17
+golang.org/x/crypto/acme
+golang.org/x/crypto/acme/autocert
+# golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
+## explicit; go 1.17
+golang.org/x/net/bpf
+golang.org/x/net/idna
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
+golang.org/x/net/ipv4
+golang.org/x/net/ipv6
+# golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+## explicit
+golang.org/x/sync/errgroup
+golang.org/x/sync/singleflight
+# golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
+## explicit; go 1.17
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/text v0.3.7
+## explicit; go 1.17
+golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
