@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/directive"
+	"gopkg.in/yaml.v2"
 )
 
 var useStdin bool
@@ -18,6 +20,7 @@ var useStdin bool
 type config struct {
 	modulePath   string
 	runnableName string
+	runnable     *directive.Runnable
 	port         int
 	portString   string
 	useStdin     bool
@@ -72,7 +75,36 @@ func configFromArgs(args []string) (*config, error) {
 		useStdin:     useStdin,
 	}
 
+	runnable, err := c.findRunnable()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to findRunnable")
+	}
+
+	c.runnable = runnable
+
 	return c, nil
+}
+
+func (c *config) findRunnable() (*directive.Runnable, error) {
+	filename := filepath.Base(c.modulePath)
+	runnableFilepath := strings.Replace(c.modulePath, filename, ".runnable.yml", -1)
+
+	if _, err := os.Stat(runnableFilepath); err != nil {
+		// .runnable.yaml doesn't exist, don't bother returning error
+		return nil, nil
+	}
+
+	runnableBytes, err := os.ReadFile(runnableFilepath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to ReadFile")
+	}
+
+	runnable := &directive.Runnable{}
+	if err := yaml.Unmarshal(runnableBytes, runnable); err != nil {
+		return nil, errors.Wrap(err, "failed to Unmarshal")
+	}
+
+	return runnable, nil
 }
 
 func init() {

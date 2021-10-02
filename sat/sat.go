@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
@@ -16,6 +17,7 @@ import (
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/vektor/vlog"
 )
 
 type sat struct {
@@ -23,6 +25,7 @@ type sat struct {
 	v    *vk.Server
 	g    *grav.Grav
 	exec rt.JobFunc
+	log  *vlog.Logger
 }
 
 // initSat initializes Reactr, Vektor, and Grav instances
@@ -30,8 +33,25 @@ type sat struct {
 func initSat(config *config) *sat {
 	r := rt.New()
 
+	logger := vlog.Default(
+		vlog.EnvPrefix("SAT"),
+	)
+
+	jobName := config.runnableName
+
+	if config.runnable != nil {
+		ident, iExists := os.LookupEnv("SAT_RUNNABLE_IDENT")
+		version, vExists := os.LookupEnv("SAT_RUNNABLE_VERSION")
+		if iExists && vExists {
+			logger.Debug("configuring with .runnable.yaml")
+			jobName = fqfn.FromParts(ident, config.runnable.Namespace, config.runnable.Name, version)
+		}
+	}
+
+	logger.Debug("registering", jobName)
+
 	exec := r.Register(
-		config.runnableName,
+		jobName,
 		rwasm.NewRunner(config.modulePath),
 		rt.Autoscale(0),
 		rt.MaxRetries(0),
@@ -50,14 +70,16 @@ func initSat(config *config) *sat {
 
 	t := websocket.New()
 	g := grav.New(
+		grav.UseLogger(logger),
 		grav.UseTransport(t),
 		grav.UseDiscovery(local.New()),
 		grav.UseEndpoint(config.portString, "/meta/message"),
 	)
 
-	r.Listen(g.Connect(), config.runnableName)
+	r.Listen(g.Connect(), jobName)
 
 	v := vk.New(
+		vk.UseLogger(logger),
 		vk.UseAppName(config.runnableName),
 		vk.UseHTTPPort(config.port),
 		vk.UseEnvPrefix("SAT"),
@@ -66,7 +88,7 @@ func initSat(config *config) *sat {
 	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())
 	v.POST("/", handler(exec))
 
-	sat := &sat{r, v, g, exec}
+	sat := &sat{r, v, g, exec, logger}
 
 	return sat
 }
