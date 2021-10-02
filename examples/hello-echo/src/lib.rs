@@ -16,9 +16,6 @@ impl Runnable for HelloEcho {
 static RUNNABLE: &HelloEcho = &HelloEcho{};
 
 #[no_mangle]
-pub extern fn _start() {}
-
-#[export_name = "wizer.initialize"]
-pub extern "C" fn init() {
+pub extern fn _start() {
     use_runnable(RUNNABLE);
 }
