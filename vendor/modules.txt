@@ -31,6 +31,8 @@ github.com/gorilla/websocket
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit; go 1.7
 github.com/julienschmidt/httprouter
+# github.com/kr/pretty v0.1.0
+## explicit
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -40,7 +42,11 @@ github.com/schollz/peerdiscovery
 # github.com/sethvargo/go-envconfig v0.3.2
 ## explicit; go 1.14
 github.com/sethvargo/go-envconfig
-# github.com/suborbital/grav v0.4.1
+# github.com/suborbital/atmo v0.3.2
+## explicit; go 1.17
+github.com/suborbital/atmo/directive
+github.com/suborbital/atmo/fqfn
+# github.com/suborbital/grav v0.4.2-0.20210826173646-7874eba0763f
 ## explicit; go 1.14
 github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
@@ -72,6 +78,9 @@ github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-amd64
 ## explicit; go 1.17
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
+# golang.org/x/mod v0.4.2
+## explicit; go 1.12
+golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
 ## explicit; go 1.17
 golang.org/x/net/bpf
@@ -95,3 +104,8 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
+# gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
+## explicit
+# gopkg.in/yaml.v2 v2.4.0
+## explicit; go 1.15
+gopkg.in/yaml.v2
