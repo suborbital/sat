@@ -27,7 +27,7 @@ make sat/dynamic #on macOS
 ```
 Then, run Sat with an input on stdin:
 ```bash
-echo "world" | .bin/sat --stdin ./testmodule/hello-echo.wasm
+echo "world" | .bin/sat --stdin ./examples/hello-echo/hello-echo.wasm
 ```
 Sat will write the response to stdout and exit.
 
