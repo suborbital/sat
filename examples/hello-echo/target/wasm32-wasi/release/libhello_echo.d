@@ -1,0 +1,1 @@
+/Users/cohix-so/Workspaces/suborbital/reactr/rwasm/testdata/hello-echo/target/wasm32-wasi/release/libhello_echo.rlib: /Users/cohix-so/Workspaces/suborbital/reactr/api/rust/suborbital/src/lib.rs /Users/cohix-so/Workspaces/suborbital/reactr/rwasm/testdata/hello-echo/src/lib.rs
