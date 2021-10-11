@@ -29,7 +29,7 @@ type sat struct {
 }
 
 // initSat initializes Reactr, Vektor, and Grav instances
-// if config.useStdin is true, only Reactr will be created, returning r, nil, nil
+// if config.useStdin is true, only Reactr will be configured without Vektor or Grav
 func initSat(config *config) *sat {
 	r := rt.New()
 
