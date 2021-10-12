@@ -1,6 +1,16 @@
+FROM golang:1.17 as deps
+
+RUN apt-get update && apt-get install -y xz-utils
+RUN go install github.com/itchyny/gojq/cmd/gojq@latest
+RUN mkdir -p /tmp/wasmtime
+COPY ./docker-deps.sh /tmp/wasmtime/
+WORKDIR /tmp/wasmtime
+RUN bash ./docker-deps.sh
+
 FROM golang:1.17 as builder
 
 RUN mkdir -p /go/sat
+COPY --from=deps /tmp/wasmtime/libwasmtime.a /usr/local/lib
 COPY . /go/sat/
 WORKDIR /go/sat
 
