@@ -1,0 +1,34 @@
+image:
+  file: .gitpod.dockerfile
+
+tasks:
+  - name: initialize
+    init: |
+
+      # ------------------------------------
+      # GoLang
+      # ------------------------------------
+      source /home/gitpod/.gvm/scripts/gvm
+      gvm use go1.17
+
+      # ------------------------------------
+      # Subo
+      # ------------------------------------
+      git clone https://github.com/suborbital/subo
+      cd subo
+      make subo
+      cd ..
+      rm -rf subo
+
+ports:
+  - port: 8080
+    visibility: public
+
+vscode:
+  extensions:
+    - golang.go
+    - wayou.vscode-todo-highlight
+    - coenraads.bracket-pair-colorizer-2
+    - pkief.material-icon-theme
+    - rust-lang.rust
+    - bungcip.better-toml

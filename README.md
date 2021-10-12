@@ -1,6 +1,8 @@
 # Sat, the tiny WebAssembly compute module
 > Sat (as in satellite) is an experiment, and isn't ready for production use. Please try it out and give feedback!
 
+[![Open in GitPod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/suborbital/sat)
+
 Sat is a compute module designed to have the maximum performance and smallest possible footprint. Where our [Atmo](https://github.com/suborbital/atmo) project is a fully-fledged platform with support for running entire applications, Sat takes the opposite approach: run a single module really f***ing fast.
 
 Sat has no dependencies (it's statically compiled), and can run in a tiny Docker container (Alpine). It's meant to live in small places such as edge compute instances.
