@@ -16,6 +16,8 @@ func addHostFns(linker *wasmtime.Linker, fns ...runtime.HostFn) {
 		// we create a copy inside the loop otherwise things get overwritten
 		fn := fns[i]
 
+		// all function params are currently expressed as i32s, which will be improved upon
+		// in the future with the introduction of witx-bindgen and/or interface types
 		params := make([]*wasmtime.ValType, fn.ArgCount)
 		for i := 0; i < fn.ArgCount; i++ {
 			params[i] = i32Type
@@ -29,7 +31,7 @@ func addHostFns(linker *wasmtime.Linker, fns ...runtime.HostFn) {
 		fnType := wasmtime.NewFuncType(params, returns)
 
 		// this is reused across the normal and Swift variations of the function
-		wasmTimeFunc := func(_ *wasmtime.Caller, args []wasmtime.Val) ([]wasmtime.Val, *wasmtime.Trap) {
+		wasmtimeFunc := func(_ *wasmtime.Caller, args []wasmtime.Val) ([]wasmtime.Val, *wasmtime.Trap) {
 			hostArgs := make([]interface{}, fn.ArgCount)
 
 			// args can be longer than hostArgs (swift, lame), so use hostArgs to control the loop
@@ -53,12 +55,12 @@ func addHostFns(linker *wasmtime.Linker, fns ...runtime.HostFn) {
 		}
 
 		// this can return an error but there's nothing we can do about it
-		_ = linker.FuncNew("env", fn.Name, fnType, wasmTimeFunc)
+		_ = linker.FuncNew("env", fn.Name, fnType, wasmtimeFunc)
 
 		// add swift params and mount swift variation
 		params = append(params, i32Type, i32Type)
 		swiftFnType := wasmtime.NewFuncType(params, returns)
 
-		_ = linker.FuncNew("env", fmt.Sprintf("%s_swift", fn.Name), swiftFnType, wasmTimeFunc)
+		_ = linker.FuncNew("env", fmt.Sprintf("%s_swift", fn.Name), swiftFnType, wasmtimeFunc)
 	}
 }
