@@ -116,9 +116,7 @@ func (s *sat) execFromStdin() error {
 		State:       map[string][]byte{},
 	}
 
-	reqJSON, _ := req.ToJSON()
-
-	result, err := s.exec(reqJSON).Then()
+	result, err := s.exec(req).Then()
 	if err != nil {
 		return errors.Wrap(err, "failed to exec")
 	}
@@ -141,9 +139,7 @@ func handler(exec rt.JobFunc) vk.HandlerFunc {
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
-		reqJSON, _ := req.ToJSON()
-
-		result, err := exec(reqJSON).Then()
+		result, err := exec(req).Then()
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to exec"))
 			return nil, vk.Wrap(http.StatusTeapot, err)

@@ -7,8 +7,8 @@ import (
 	"github.com/suborbital/reactr/rwasm/runtime"
 )
 
-// WasmTimeBuilder is a Wasmer implementation of the instanceBuilder interface
-type WasmTimeBuilder struct {
+// WasmtimeBuilder is a Wasmer implementation of the instanceBuilder interface
+type WasmtimeBuilder struct {
 	ref     *moduleref.WasmModuleRef
 	hostFns []runtime.HostFn
 	module  *wasmtime.Module
@@ -16,9 +16,9 @@ type WasmTimeBuilder struct {
 	linker  *wasmtime.Linker
 }
 
-// NewBuilder creates a new WasmTimeBuilder
+// NewBuilder creates a new WasmtimeBuilder
 func NewBuilder(ref *moduleref.WasmModuleRef, hostFns ...runtime.HostFn) runtime.RuntimeBuilder {
-	w := &WasmTimeBuilder{
+	w := &WasmtimeBuilder{
 		ref:     ref,
 		hostFns: hostFns,
 	}
@@ -26,7 +26,7 @@ func NewBuilder(ref *moduleref.WasmModuleRef, hostFns ...runtime.HostFn) runtime
 	return w
 }
 
-func (w *WasmTimeBuilder) New() (runtime.RuntimeInstance, error) {
+func (w *WasmtimeBuilder) New() (runtime.RuntimeInstance, error) {
 	module, engine, linker, err := w.internals()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to internals")
@@ -51,7 +51,7 @@ func (w *WasmTimeBuilder) New() (runtime.RuntimeInstance, error) {
 		if errors.Is(err, runtime.ErrExportNotFound) {
 			// that's ok, not all modules will have _start
 		} else {
-			return nil, errors.Wrap(err, "failed to call _start")
+			return nil, errors.Wrap(err, "failed to call exported _start")
 		}
 	}
 
@@ -60,7 +60,7 @@ func (w *WasmTimeBuilder) New() (runtime.RuntimeInstance, error) {
 	return inst, nil
 }
 
-func (w *WasmTimeBuilder) internals() (*wasmtime.Module, *wasmtime.Engine, *wasmtime.Linker, error) {
+func (w *WasmtimeBuilder) internals() (*wasmtime.Module, *wasmtime.Engine, *wasmtime.Linker, error) {
 	if w.module == nil {
 		moduleBytes, err := w.ref.Bytes()
 		if err != nil {

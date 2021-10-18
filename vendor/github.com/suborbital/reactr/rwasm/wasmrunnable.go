@@ -40,10 +40,16 @@ func NewRunnerWithRef(ref *moduleref.WasmModuleRef) *Runner {
 // Run runs a Runner
 func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 	var jobBytes []byte
+	var req *request.CoordinatedRequest
 
-	// check if the job is a CoordinatedRequest, and set up the WasmInstance if so
-	req, err := request.FromJSON(job.Bytes())
-	if err != nil {
+	// check if the job is a CoordinatedRequest (pointer or bytes), and set up the WasmInstance if so
+	if jobReq, ok := job.Data().(*request.CoordinatedRequest); ok {
+		req = jobReq
+
+	} else if jobReq, err := request.FromJSON(job.Bytes()); err == nil {
+		req = jobReq
+
+	} else {
 		// if it's not a request, treat it as normal data
 		bytes, bytesErr := interfaceToBytes(job.Data())
 		if bytesErr != nil {
@@ -51,11 +57,10 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 		}
 
 		jobBytes = bytes
-	} else {
-		// if the job is a request, add it to the Ctx and
-		// set the job input to be the body of the request
-		ctx.UseRequest(req)
+	}
 
+	if req != nil {
+		ctx.UseRequest(req)
 		jobBytes = req.Body
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/vektor/vk"
@@ -36,7 +37,8 @@ func FromVKRequest(r *http.Request, ctx *vk.Ctx) (*CoordinatedRequest, error) {
 
 	flatHeaders := map[string]string{}
 	for k, v := range r.Header {
-		flatHeaders[k] = v[0]
+		//we lowercase the key to have case-insensitive lookup later
+		flatHeaders[strings.ToLower(k)] = v[0]
 	}
 
 	flatParams := map[string]string{}
@@ -86,6 +88,35 @@ func (c *CoordinatedRequest) BodyField(key string) (string, error) {
 	}
 
 	return stringVal, nil
+}
+
+// SetBodyField sets a field in the JSON body to a new value
+func (c *CoordinatedRequest) SetBodyField(key, val string) error {
+	if c.bodyValues == nil {
+		if len(c.Body) == 0 {
+			return nil
+		}
+
+		vals := map[string]interface{}{}
+
+		if err := json.Unmarshal(c.Body, &vals); err != nil {
+			return errors.Wrap(err, "failed to Unmarshal request body")
+		}
+
+		// cache the parsed body
+		c.bodyValues = vals
+	}
+
+	c.bodyValues[key] = val
+
+	newJSON, err := json.Marshal(c.bodyValues)
+	if err != nil {
+		return errors.Wrap(err, "failed to Marshal new body")
+	}
+
+	c.Body = newJSON
+
+	return nil
 }
 
 // FromJSON unmarshalls a CoordinatedRequest from JSON

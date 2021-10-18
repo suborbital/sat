@@ -1,6 +1,8 @@
 package rcap
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/suborbital/reactr/request"
 )
@@ -21,12 +23,15 @@ var (
 
 // RequestHandlerConfig is configuration for the request capability
 type RequestHandlerConfig struct {
-	Enabled bool `json:"enabled" yaml:"enabled"`
+	Enabled       bool `json:"enabled" yaml:"enabled"`
+	AllowGetField bool `json:"allowGetField" yaml:"allowGetField"`
+	AllowSetField bool `json:"allowSetField" yaml:"allowSetField"`
 }
 
 // RequestHandlerCapability allows runnables to handle HTTP requests
 type RequestHandlerCapability interface {
 	GetField(fieldType int32, key string) ([]byte, error)
+	SetField(fieldType int32, key string, val string) error
 	SetResponseHeader(key, val string) error
 }
 
@@ -45,8 +50,11 @@ func NewRequestHandler(config RequestHandlerConfig, req *request.CoordinatedRequ
 	return d
 }
 
+// GetField gets a field from the attached request
 func (r *requestHandler) GetField(fieldType int32, key string) ([]byte, error) {
 	if !r.config.Enabled {
+		return nil, ErrCapabilityNotEnabled
+	} else if !r.config.AllowGetField {
 		return nil, ErrCapabilityNotEnabled
 	}
 
@@ -78,7 +86,9 @@ func (r *requestHandler) GetField(fieldType int32, key string) ([]byte, error) {
 			return nil, errors.Wrap(err, "failed to get BodyField")
 		}
 	case RequestFieldTypeHeader:
-		header, ok := r.req.Headers[key]
+		// lowercase to make the search case-insensitive
+		lowerKey := strings.ToLower(key)
+		header, ok := r.req.Headers[lowerKey]
 		if ok {
 			val = header
 		} else {
@@ -103,6 +113,49 @@ func (r *requestHandler) GetField(fieldType int32, key string) ([]byte, error) {
 	}
 
 	return []byte(val), nil
+}
+
+// SetField sets a field on the attached request
+func (r *requestHandler) SetField(fieldType int32, key string, val string) error {
+	if !r.config.Enabled {
+		return ErrCapabilityNotEnabled
+	} else if !r.config.AllowSetField {
+		return ErrCapabilityNotEnabled
+	}
+
+	if r.req == nil {
+		return ErrReqNotSet
+	}
+
+	switch fieldType {
+	case RequestFieldTypeMeta:
+		switch key {
+		case "method":
+			r.req.Method = val
+		case "url":
+			r.req.URL = val
+		case "id":
+			// do nothing
+		case "body":
+			r.req.Body = []byte(val)
+		default:
+			return ErrInvalidKey
+		}
+	case RequestFieldTypeBody:
+		if err := r.req.SetBodyField(key, val); err != nil {
+			return errors.Wrap(err, "failed to get SetBodyField")
+		}
+	case RequestFieldTypeHeader:
+		r.req.Headers[key] = val
+	case RequestFieldTypeParams:
+		r.req.Params[key] = val
+	case RequestFieldTypeState:
+		r.req.State[key] = []byte(val)
+	default:
+		return ErrInvalidFieldType
+	}
+
+	return nil
 }
 
 // SetResponseHeader sets a header on the response

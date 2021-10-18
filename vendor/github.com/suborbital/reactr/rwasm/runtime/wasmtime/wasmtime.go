@@ -80,5 +80,5 @@ func (w *WasmtimeInstance) Deallocate(pointer int32, length int) {
 
 // Close closes the instance
 func (w *WasmtimeInstance) Close() {
-	// figure out how to close
+	// TODO: figure out how to close
 }

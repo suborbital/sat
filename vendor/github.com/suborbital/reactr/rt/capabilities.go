@@ -22,6 +22,7 @@ type Capabilities struct {
 	// RequestHandler and doFunc are special because they are more
 	// sensitive; they could cause memory leaks or expose internal state,
 	// so they cannot be swapped out for a different implementation.
+	RequestConfig  *rcap.RequestHandlerConfig
 	RequestHandler rcap.RequestHandlerCapability
 	doFunc         coreDoFunc
 }
@@ -43,6 +44,7 @@ func CapabilitiesFromConfig(config rcap.CapabilityConfig) Capabilities {
 
 		// RequestHandler and doFunc don't get set here since they are set by
 		// the rt and rwasm internals; a better solution for this should probably be found
+		RequestConfig: config.RequestHandler,
 	}
 
 	return caps

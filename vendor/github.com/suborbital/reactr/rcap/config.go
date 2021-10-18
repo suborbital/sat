@@ -51,7 +51,9 @@ func DefaultConfigWithLogger(logger *vlog.Logger) CapabilityConfig {
 			Enabled: true,
 		},
 		RequestHandler: &RequestHandlerConfig{
-			Enabled: true,
+			Enabled:       true,
+			AllowGetField: true,
+			AllowSetField: true,
 		},
 	}
 
