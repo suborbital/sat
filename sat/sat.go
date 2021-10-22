@@ -105,7 +105,7 @@ func (s *sat) execFromStdin() error {
 	input := scanner.Bytes()
 
 	// construct a fake HTTP request from the input
-	req := request.CoordinatedRequest{
+	req := &request.CoordinatedRequest{
 		Method:      http.MethodPost,
 		URL:         "/",
 		ID:          uuid.New().String(),

@@ -1,12 +1,11 @@
 use suborbital::runnable::*;
-use suborbital::req;
+use suborbital::util;
 
 struct HelloEcho{}
 
 impl Runnable for HelloEcho {
-    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
-        let message = req::header("message");
-    
+    fn run(&self, input: Vec<u8>) -> Result<Vec<u8>, RunErr> {
+        let message = util::to_string(input);
         Ok(format!("hello {}", message).as_bytes().to_vec())
     }
 }
