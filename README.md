@@ -8,7 +8,10 @@ Sat is a compute module designed to have the maximum performance and smallest po
 Sat has no dependencies (it's statically compiled), and can run in a tiny Docker container (Alpine). It's meant to live in small places such as edge compute instances.
 
 ### Using Sat
+*If you are using an Apple M1 machine, you might need to run `export DOCKER_BUILDKIT=0` prior to the below command.*
+
 To run Sat, Docker is easiest. Clone this repo and run:
+
 ```bash
 make docker run
 ```
