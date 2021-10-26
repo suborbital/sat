@@ -10,6 +10,7 @@ docker:
 
 docker/publish:
 	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/sat:$(shell date +%Y.%m.%d-%M) --push
+	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/sat:dev --push
 	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/sat:latest --push
 
 docker/wasmtime:
