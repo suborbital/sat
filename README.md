@@ -5,7 +5,7 @@
 
 Sat is a compute module designed to have the maximum performance and smallest possible footprint. Where our [Atmo](https://github.com/suborbital/atmo) project is a fully-fledged platform with support for running entire applications, Sat takes the opposite approach: run a single module really f***ing fast.
 
-Sat has no dependencies (it's statically compiled), and can run in a tiny Docker container (Alpine). It's meant to live in small places such as edge compute instances.
+Sat has no dependencies (it's statically compiled), and can run in a tiny Docker container (Distroless). It's meant to live in small places such as edge compute instances.
 
 ### Using Sat
 *If you are using an Apple M1 machine, you might need to run `export DOCKER_BUILDKIT=0` prior to the below command.*
