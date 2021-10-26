@@ -9,13 +9,14 @@ WORKDIR /go/sat
 
 RUN make sat
 
-FROM alpine:latest
+FROM gcr.io/distroless/static-debian11
 
-RUN addgroup -S satgroup && adduser -S sat -G satgroup
-RUN mkdir -p /home/sat && chown -R sat /home/sat && chmod -R 700 /home/sat
+# RUN addgroup -S satgroup && adduser -S sat -G satgroup
+# RUN mkdir -p /home/sat && chown -R sat /home/sat && chmod -R 700 /home/sat
 
-COPY --from=builder /go/sat/.bin/sat /usr/local/bin
+COPY --from=builder /go/sat/.bin/sat /usr/local/bin/
+ENV PATH=/usr/local/bin
 
-WORKDIR /home/sat
+# WORKDIR /home/sat
 
-USER sat
+# USER sat

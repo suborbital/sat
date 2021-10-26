@@ -18,6 +18,6 @@ docker/wasmtime/publish: docker/wasmtime
 	docker push suborbital/wasmtime:dev
 
 run:
-	docker run -it -e SAT_HTTP_PORT=8080 -p 8080:8080 -v $(PWD)/examples:/home/sat suborbital/sat:dev sat ./hello-echo/hello-echo.wasm
+	docker run -it -e SAT_HTTP_PORT=8080 -p 8080:8080 -v $(PWD)/examples:/runnables suborbital/sat:dev sat /runnables/hello-echo/hello-echo.wasm
 
 .PHONY: sat docker
