@@ -30,4 +30,5 @@ jobs:
     - name: Run test
       run: |
         make sat
+        make const
         echo "world" | .bin/sat --stdin ./examples/hello-echo/hello-echo.wasm
