@@ -1,4 +1,5 @@
 #!/bin/bash
+
 set -e
 
 # Get latest release assets from GitHub API

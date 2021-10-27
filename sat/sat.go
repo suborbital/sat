@@ -86,7 +86,7 @@ func initSat(config *config) *sat {
 	)
 
 	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())
-	v.POST("/", handler(exec))
+	v.POST("/*any", handler(exec))
 
 	sat := &sat{r, v, g, exec, logger}
 
