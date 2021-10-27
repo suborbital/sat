@@ -8,6 +8,7 @@ require (
 	github.com/suborbital/atmo v0.3.2
 	github.com/suborbital/grav v0.4.2-0.20210826173646-7874eba0763f
 	github.com/suborbital/reactr v0.12.1-0.20211015123805-a2e7bc59b62a
+	github.com/suborbital/subo v0.0.18
 	github.com/suborbital/vektor v0.5.0
 	gopkg.in/yaml.v2 v2.4.0
 )

@@ -49,7 +49,7 @@ If you provide a URL as the path argument to Sat, it will download the module fr
 ```
 The URL must be HTTPS and must have a `.wasm` suffix (excluding query parameters)
 
-### One day...
-Sat has the ability to create a mesh with other instances using local network discovery and websockets. By default, Sat starts on a random port, and listens for requests from its peers. In the future, this will enable some very interesting network topologies and potentially an integration with Atmo, but for now we are focused on being tiny and fast.
+### Constellations
+Sat is designed to run in a constellation, i.e. a meshed cluster of instances. This enables very interesting network topologies which can run applications in massively distributed or 'edge' environments. This repo includes the `constd` tool, which is an experiment-atop-experiment constellation manager that can run [Atmo](https://github.com/suborbital/atmo) applications in a distributed manner. You can learn more [here](./constd).
 
 Copyright Suborbital contributors 2021.
