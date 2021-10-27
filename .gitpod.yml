@@ -1,6 +1,15 @@
 image:
   file: .gitpod.dockerfile
 
+tasks:
+  - name: initialize
+    init: |
+      # ------------------------------------
+      # GoLang
+      # ------------------------------------
+      source /home/gitpod/.gvm/scripts/gvm
+      gvm use go1.17
+
 ports:
   - port: 8080
     visibility: public
