@@ -22,4 +22,9 @@ docker/wasmtime/publish:
 run:
 	docker run -it -e SAT_HTTP_PORT=8080 -p 8080:8080 -v $(PWD)/examples:/runnables suborbital/sat:dev sat /runnables/hello-echo/hello-echo.wasm
 
-.PHONY: sat docker
+# CONSTD TARGETS
+
+constd:
+	go build -o .bin/constd -tags netgo -ldflags="-extldflags=-static" ./constd
+
+.PHONY: sat constd
