@@ -23,6 +23,8 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bketelsen/crypt v0.0.3-0.20200106085610-5cbc8cc4026c/go.mod h1:MKsuJmJgSg28kpZDP6UIiPt0e0Oz0kqKNGyRaWEPv84=
+github.com/bytecodealliance/wasmtime-go v0.0.0-20211012215324-feaa6d2af603 h1:KFCGLzinVc/6VSyejzrCWFmoCc8MOiECv7VsKfmQ/YE=
+github.com/bytecodealliance/wasmtime-go v0.0.0-20211012215324-feaa6d2af603/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
 github.com/bytecodealliance/wasmtime-go v0.30.0 h1:WfYpr4WdqInt8m5/HvYinf+HrSEAIhItKIcth+qb1h4=
 github.com/bytecodealliance/wasmtime-go v0.30.0/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
 github.com/cespare/xxhash v1.1.0 h1:a6HrQnmkObjyL+Gs60czilIUGqrzKutQD6XZog3p+ko=
@@ -253,6 +255,8 @@ github.com/suborbital/reactr v0.11.1-0.20210811160758-b715bc22e760/go.mod h1:WKI
 github.com/suborbital/reactr v0.12.1-0.20210903155831-ca5a3a8a5f9b/go.mod h1:G2WF/19leahWGLGaWx/0vCu3g/Ovt2ALWIslL2v8+rE=
 github.com/suborbital/reactr v0.12.1-0.20210929205224-1ad0ace4a6a9 h1:OsX09pbTBhN+MVlc1M8DFGxeh+rUXbGxG0Cw6Bn0qKg=
 github.com/suborbital/reactr v0.12.1-0.20210929205224-1ad0ace4a6a9/go.mod h1:qeh8mMaIR7ikwhYjksX1CtjQ+/UnXdUiLOEJxPAdY4o=
+github.com/suborbital/reactr v0.12.1-0.20211012202710-6ab5699f12d9 h1:vjOl+bhlRbbbFZzANybrvnvDH71lyz/FVi+iIIBbnxU=
+github.com/suborbital/reactr v0.12.1-0.20211012202710-6ab5699f12d9/go.mod h1:qeh8mMaIR7ikwhYjksX1CtjQ+/UnXdUiLOEJxPAdY4o=
 github.com/suborbital/reactr v0.12.1-0.20211015123805-a2e7bc59b62a h1:cnK6MshQeLSqZ2oFhWS93p5JttrEZCfGy3Dl3xz1Jyw=
 github.com/suborbital/reactr v0.12.1-0.20211015123805-a2e7bc59b62a/go.mod h1:qeh8mMaIR7ikwhYjksX1CtjQ+/UnXdUiLOEJxPAdY4o=
 github.com/suborbital/subo v0.0.18 h1:LSZXf7qRkSZKiIFZe61sF4fV7vfwW3cAeEM7z8Ptbio=

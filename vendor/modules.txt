@@ -44,6 +44,8 @@ github.com/schollz/peerdiscovery
 github.com/sethvargo/go-envconfig
 # github.com/suborbital/atmo v0.3.2
 ## explicit; go 1.17
+github.com/suborbital/atmo/atmo/appsource
+github.com/suborbital/atmo/atmo/options
 github.com/suborbital/atmo/bundle
 github.com/suborbital/atmo/directive
 github.com/suborbital/atmo/fqfn

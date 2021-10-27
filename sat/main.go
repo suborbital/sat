@@ -12,7 +12,10 @@ func main() {
 	}
 
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
-	s := initSat(config)
+	s, err := initSat(config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if config.useStdin {
 		if err := s.execFromStdin(); err != nil {
