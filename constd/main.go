@@ -69,7 +69,7 @@ func startConstellation(directive *directive.Directive) {
 			for {
 				// build this monstrosity of an exec string
 				_, err := util.Run(fmt.Sprintf(
-					"docker run -p %s:%s -e SAT_HTTP_PORT=%s -v %s:/runnables --network bridge --name %s suborbital/sat:%s sat %s.wasm",
+					"docker run --rm -p %s:%s -e SAT_HTTP_PORT=%s -v %s:/runnables --network bridge --name %s suborbital/sat:%s sat %s.wasm",
 					port, port, port,
 					folderPath,
 					runnable.Name,
@@ -136,5 +136,5 @@ func randPort() (string, error) {
 		return "", errors.Wrap(err, "failed to rand.Int")
 	}
 
-	return fmt.Sprintf("%d", randPort.Int64()+1000), nil
+	return fmt.Sprintf("%d", randPort.Int64()+10000), nil
 }
