@@ -1,11 +1,11 @@
-# Sat, the tiny WebAssembly compute module
+# Sat, the tiny WebAssembly edge compute server
 > Sat (as in satellite) is an experiment, and isn't ready for production use. Please try it out and give feedback!
 
 [![Open in GitPod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/suborbital/sat)
 
-Sat is a compute module designed to have the maximum performance and smallest possible footprint. Where our [Atmo](https://github.com/suborbital/atmo) project is a fully-fledged platform with support for running entire applications, Sat takes the opposite approach: run a single module really f***ing fast.
+Sat is a WebAssembly-powered server designed to have the maximum performance and smallest possible footprint. Our [Atmo](https://github.com/suborbital/atmo) project is a fully-fledged platform with support for running entire applications, whereas Sat takes the opposite approach: run a single Wasm module really f***ing fast.
 
-Sat has no dependencies (it's statically compiled), and can run in a tiny Docker container (Distroless). It's meant to live in small places such as edge compute instances.
+Sat has no dependencies (it's statically compiled), and can run in a tiny Docker container (Distroless) or on bare metal. It's meant to live in small places such as edge compute environments.
 
 ### Using Sat
 
@@ -50,6 +50,6 @@ If you provide a URL as the path argument to Sat, it will download the module fr
 The URL must be HTTPS and must have a `.wasm` suffix (excluding query parameters)
 
 ### Constellations
-Sat is designed to run in a constellation, i.e. a meshed cluster of instances. This enables very interesting network topologies which can run applications in massively distributed or 'edge' environments. This repo includes the `constd` tool, which is an experiment-atop-experiment constellation manager that can run [Atmo](https://github.com/suborbital/atmo) applications in a distributed manner. You can learn more [here](./constd).
+Sat is designed to run in a constellation, i.e. a meshed cluster of instances. This enables very interesting network topologies which can run applications in massively distributed and 'edge' environments. This repo includes the `constd` tool, which is an experiment-atop-experiment constellation manager that can run [Atmo](https://github.com/suborbital/atmo) applications in a distributed manner. You can learn more [here](./constd).
 
 Copyright Suborbital contributors 2021.
