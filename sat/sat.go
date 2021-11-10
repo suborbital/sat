@@ -64,8 +64,23 @@ func initSat(config *config) (*sat, error) {
 		}
 
 		appCaps := appSource.Capabilities()
+
 		if appCaps != nil {
-			caps = *appCaps
+			if appCaps.Auth != nil {
+				caps.Auth = appCaps.Auth
+			}
+			if appCaps.Cache != nil {
+				caps.Cache = appCaps.Cache
+			}
+			if appCaps.File != nil {
+				caps.File = appCaps.File
+			}
+			if appCaps.GraphQL != nil {
+				caps.GraphQL = appCaps.GraphQL
+			}
+			if appCaps.HTTP != nil {
+				caps.HTTP = appCaps.HTTP
+			}
 		} else {
 			return nil, errors.New("appSource.Capabilities returned nil")
 		}
