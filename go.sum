@@ -27,6 +27,8 @@ github.com/bytecodealliance/wasmtime-go v0.0.0-20211012215324-feaa6d2af603 h1:KF
 github.com/bytecodealliance/wasmtime-go v0.0.0-20211012215324-feaa6d2af603/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
 github.com/bytecodealliance/wasmtime-go v0.30.0 h1:WfYpr4WdqInt8m5/HvYinf+HrSEAIhItKIcth+qb1h4=
 github.com/bytecodealliance/wasmtime-go v0.30.0/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
+github.com/bytecodealliance/wasmtime-go v0.31.0 h1:AbMdV1pwjw/0Ito5yARcGzY366cq5NIiDk5vpy1c2Lw=
+github.com/bytecodealliance/wasmtime-go v0.31.0/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
 github.com/cespare/xxhash v1.1.0 h1:a6HrQnmkObjyL+Gs60czilIUGqrzKutQD6XZog3p+ko=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/cespare/xxhash/v2 v2.1.1 h1:6MnRN8NT7+YBpUIWxHtefFZOKTAPgGjpQSxqLNn0+qY=
