@@ -20,7 +20,7 @@ func InstanceForIdentifier(ident int32, needsFFIResult bool) (*WasmInstance, err
 
 	ref := rawRef.(instanceReference)
 
-	if needsFFIResult && ref.Inst.ffiResult != nil {
+	if needsFFIResult && ref.Inst.Ctx().HasFFIResult() {
 		return nil, errors.New("cannot use instance for host call with existing call in progress")
 	}
 

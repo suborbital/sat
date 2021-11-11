@@ -78,7 +78,6 @@ func (w *WasmEnvironment) RemoveInstance() error {
 	inst.runtime.Close()
 	inst.runtime = nil
 	inst.ctx = nil
-	inst.ffiResult = nil
 	inst.resultChan = nil
 	inst.errChan = nil
 	inst = nil
@@ -104,7 +103,6 @@ func (w *WasmEnvironment) UseInstance(ctx *rt.Ctx, instFunc func(*WasmInstance, 
 	}
 
 	// setup the instance's temporary state
-	inst.ffiResult = nil
 	inst.ctx = ctx
 
 	// do the actual call into the Wasm module
@@ -112,7 +110,6 @@ func (w *WasmEnvironment) UseInstance(ctx *rt.Ctx, instFunc func(*WasmInstance, 
 
 	// clear the instance's temporary state
 	inst.ctx = nil
-	inst.ffiResult = nil
 
 	// remove the instance from global state
 	removeIdentifier(ident)

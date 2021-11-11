@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/grav/discovery/local"
@@ -63,30 +64,17 @@ func initSat(config *config) (*sat, error) {
 			return nil, errors.Wrap(err, "failed to appSource.Start")
 		}
 
-		appCaps := appSource.Capabilities()
-
-		if appCaps != nil {
-			if appCaps.Auth != nil {
-				caps.Auth = appCaps.Auth
-			}
-			if appCaps.Cache != nil {
-				caps.Cache = appCaps.Cache
-			}
-			if appCaps.File != nil {
-				caps.File = appCaps.File
-			}
-			if appCaps.GraphQL != nil {
-				caps.GraphQL = appCaps.GraphQL
-			}
-			if appCaps.HTTP != nil {
-				caps.HTTP = appCaps.HTTP
-			}
-		} else {
-			return nil, errors.New("appSource.Capabilities returned nil")
+		rendered, err := capabilities.Render(caps, appSource, logger)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to capabilities.Render")
 		}
+		caps = rendered
 	}
 
-	r := rt.NewWithConfig(caps)
+	r, err := rt.NewWithConfig(caps)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to rt.NewWithConfig")
+	}
 
 	exec := r.Register(
 		jobName,

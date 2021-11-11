@@ -23,7 +23,7 @@ func ReturnResultHandler() runtime.HostFn {
 func return_result(pointer int32, size int32, identifier int32) {
 	inst, err := runtime.InstanceForIdentifier(identifier, false)
 	if err != nil {
-		runtime.InternalLogger().Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		runtime.InternalLogger().Error(errors.Wrap(err, "[rwasm] alert: failed to InstanceForIdentifier"))
 		return
 	}
 
@@ -50,7 +50,7 @@ func ReturnErrorHandler() runtime.HostFn {
 func return_error(code int32, pointer int32, size int32, identifier int32) {
 	inst, err := runtime.InstanceForIdentifier(identifier, false)
 	if err != nil {
-		runtime.InternalLogger().Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		runtime.InternalLogger().Error(errors.Wrap(err, "[rwasm] alert: failed to InstanceForIdentifier"))
 		return
 	}
 

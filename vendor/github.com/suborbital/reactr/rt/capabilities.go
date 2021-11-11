@@ -16,8 +16,9 @@ type Capabilities struct {
 	LoggerSource  rcap.LoggerCapability
 	HTTPClient    rcap.HTTPCapability
 	GraphQLClient rcap.GraphQLCapability
-	FileSource    rcap.FileCapability
 	Cache         rcap.CacheCapability
+	FileSource    rcap.FileCapability
+	Database      rcap.DatabaseCapability
 
 	// RequestHandler and doFunc are special because they are more
 	// sensitive; they could cause memory leaks or expose internal state,
@@ -28,26 +29,35 @@ type Capabilities struct {
 }
 
 // DefaultCapabilities returns the default capabilities with the provided Logger
-func DefaultCapabilities(logger *vlog.Logger) Capabilities {
-	return CapabilitiesFromConfig(rcap.DefaultConfigWithLogger(logger))
+func DefaultCapabilities(logger *vlog.Logger) *Capabilities {
+	// this will never error with the default config, as the db capability is disabled
+	caps, _ := CapabilitiesFromConfig(rcap.DefaultConfigWithLogger(logger))
+
+	return caps
 }
 
-func CapabilitiesFromConfig(config rcap.CapabilityConfig) Capabilities {
-	caps := Capabilities{
+func CapabilitiesFromConfig(config rcap.CapabilityConfig) (*Capabilities, error) {
+	database, err := rcap.NewSqlDatabase(config.DB)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to NewSqlDatabase")
+	}
+
+	caps := &Capabilities{
 		config:        config,
 		Auth:          rcap.DefaultAuthProvider(*config.Auth),
 		LoggerSource:  rcap.DefaultLoggerSource(*config.Logger),
 		HTTPClient:    rcap.DefaultHTTPClient(*config.HTTP),
 		GraphQLClient: rcap.DefaultGraphQLClient(*config.GraphQL),
-		FileSource:    rcap.DefaultFileSource(*config.File),
 		Cache:         rcap.SetupCache(*config.Cache),
+		FileSource:    rcap.DefaultFileSource(*config.File),
+		Database:      database,
 
 		// RequestHandler and doFunc don't get set here since they are set by
 		// the rt and rwasm internals; a better solution for this should probably be found
 		RequestConfig: config.RequestHandler,
 	}
 
-	return caps
+	return caps, nil
 }
 
 // Config returns the configuration that was used to create the Capabilities
