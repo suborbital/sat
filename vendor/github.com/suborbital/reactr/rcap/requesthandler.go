@@ -18,7 +18,7 @@ const (
 var (
 	ErrReqNotSet        = errors.New("req is not set")
 	ErrInvalidFieldType = errors.New("invalid field type")
-	ErrInvalidKey       = errors.New("invalid key")
+	ErrKeyNotFound      = errors.New("key not found")
 )
 
 // RequestHandlerConfig is configuration for the request capability
@@ -76,7 +76,7 @@ func (r *requestHandler) GetField(fieldType int32, key string) ([]byte, error) {
 		case "body":
 			val = string(r.req.Body)
 		default:
-			return nil, ErrInvalidKey
+			return nil, ErrKeyNotFound
 		}
 	case RequestFieldTypeBody:
 		bodyVal, err := r.req.BodyField(key)
@@ -92,24 +92,24 @@ func (r *requestHandler) GetField(fieldType int32, key string) ([]byte, error) {
 		if ok {
 			val = header
 		} else {
-			return nil, ErrInvalidKey
+			return nil, ErrKeyNotFound
 		}
 	case RequestFieldTypeParams:
 		param, ok := r.req.Params[key]
 		if ok {
 			val = param
 		} else {
-			return nil, ErrInvalidKey
+			return nil, ErrKeyNotFound
 		}
 	case RequestFieldTypeState:
 		stateVal, ok := r.req.State[key]
 		if ok {
 			val = string(stateVal)
 		} else {
-			return nil, ErrInvalidKey
+			return nil, ErrKeyNotFound
 		}
 	default:
-		return nil, ErrInvalidFieldType
+		return nil, errors.Wrapf(ErrInvalidFieldType, "module requested field type %d", fieldType)
 	}
 
 	return []byte(val), nil
@@ -139,7 +139,7 @@ func (r *requestHandler) SetField(fieldType int32, key string, val string) error
 		case "body":
 			r.req.Body = []byte(val)
 		default:
-			return ErrInvalidKey
+			return ErrKeyNotFound
 		}
 	case RequestFieldTypeBody:
 		if err := r.req.SetBodyField(key, val); err != nil {

@@ -21,9 +21,9 @@ type RedisConfig struct {
 
 func newRedisCache(config CacheConfig) *RedisCache {
 	client := redis.NewClient(&redis.Options{
-		Addr:     config.RedisConfig.ServerAddress,
-		Username: config.RedisConfig.Username,
-		Password: config.RedisConfig.Password,
+		Addr:     AugmentedValFromEnv(config.RedisConfig.ServerAddress),
+		Username: AugmentedValFromEnv(config.RedisConfig.Username),
+		Password: AugmentedValFromEnv(config.RedisConfig.Password),
 	})
 
 	rc := &RedisCache{

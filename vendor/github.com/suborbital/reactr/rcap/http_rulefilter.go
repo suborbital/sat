@@ -1,6 +1,7 @@
 package rcap
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -9,9 +10,10 @@ import (
 )
 
 var (
-	ErrHttpDisallowed   = errors.New("requests to insecure HTTP endpoints is disallowed")
-	ErrIPsDisallowed    = errors.New("requests to IP addresses are disallowed")
-	ErrDomainDisallowed = errors.New("requests to this domain are disallowed")
+	ErrHttpDisallowed    = errors.New("requests to insecure HTTP endpoints is disallowed")
+	ErrIPsDisallowed     = errors.New("requests to IP addresses are disallowed")
+	ErrPrivateDisallowed = errors.New("requests to private IP address ranges are disallowed")
+	ErrDomainDisallowed  = errors.New("requests to this domain are disallowed")
 )
 
 // HTTPRules is a set of rules that governs use of the HTTP capability
@@ -19,40 +21,99 @@ type HTTPRules struct {
 	AllowedDomains []string `json:"allowedDomains" yaml:"allowedDomains"`
 	BlockedDomains []string `json:"blockedDomains" yaml:"blockedDomains"`
 	AllowIPs       bool     `json:"allowIPs" yaml:"allowIPs"`
+	AllowPrivate   bool     `json:"allowPrivate" yaml:"allowPrivate"`
 	AllowHTTP      bool     `json:"allowHTTP" yaml:"allowHTTP"`
 }
 
 // requestIsAllowed returns a non-nil error if the provided request is not allowed to proceed
 func (h HTTPRules) requestIsAllowed(req *http.Request) error {
+	// remove square brackets from raw IPv6 host
+	cleanHost := strings.TrimSuffix(strings.TrimPrefix(req.URL.Host, "["), "]")
+
+	hosts := []string{cleanHost}
+
 	if !h.AllowHTTP {
 		if req.URL.Scheme == "http" {
 			return ErrHttpDisallowed
 		}
 	}
 
-	if !h.AllowIPs {
-		if net.ParseIP(req.URL.Host) != nil {
-			return ErrIPsDisallowed
+	// determine if the passed-in host is an IP address
+	isRawIP := net.ParseIP(cleanHost) != nil
+	if !h.AllowIPs && isRawIP {
+		return ErrIPsDisallowed
+	}
+
+	// determine if the host is a CNAME record and resolve it
+	// to be checked in addition to the passed-in raw host
+	resolvedCNAME, err := net.LookupCNAME(req.URL.Host)
+	if err != nil {
+		// that's ok, it just means there is no CNAME
+	} else if resolvedCNAME != "" && resolvedCNAME != req.URL.Host {
+		hosts = append(hosts, resolvedCNAME)
+	}
+
+	allowDefault := true // if neither allowed or blocked domains are configured, the default is to allow
+
+	for _, host := range hosts {
+		// first check for resolved private IPs if needed
+		if !h.AllowPrivate {
+			if err := resolvesToPrivate(host); err != nil {
+				return err
+			}
+		}
+
+		// if AllowedDomains are listed, they take precednece over BlockedDomains
+		// (an explicit allowlist is more strict than a blocklist, so we default to that)
+		if len(h.AllowedDomains) > 0 {
+			allowDefault = false
+
+			// check each allowed domain, and if any match, return nil
+			for _, d := range h.AllowedDomains {
+				if matchesDomain(d, host) {
+					return nil
+				}
+			}
+		} else if len(h.BlockedDomains) > 0 {
+			allowDefault = true
+
+			// check each blocked domain, if any match return an error
+			for _, d := range h.BlockedDomains {
+				if matchesDomain(d, host) {
+					return ErrDomainDisallowed
+				}
+			}
+		}
+
+		if !allowDefault {
+			return ErrDomainDisallowed
 		}
 	}
 
-	// if AllowedDomains are listed, they take precednece over BlockedDomains
-	// (an explicit allowlist is more strict than a blocklist, so we default to that)
-	if len(h.AllowedDomains) > 0 {
-		// check each allowed domain, and if any match, return nil
-		for _, d := range h.AllowedDomains {
-			if matchesDomain(d, req.URL.Host) {
-				return nil
-			}
-		}
+	return nil
+}
 
-		return ErrDomainDisallowed
-	} else if len(h.BlockedDomains) > 0 {
-		// check each blocked domain, if any match return an error
-		for _, d := range h.BlockedDomains {
-			if matchesDomain(d, req.URL.Host) {
-				return ErrDomainDisallowed
-			}
+// returns nil if the host does not resolve to an IP in a private range
+// returns ErrPrivateDisallowed if it does
+func resolvesToPrivate(host string) error {
+	if strings.Contains(host, "localhost") {
+		return ErrPrivateDisallowed
+	}
+
+	// resolve DNS before checking
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		dnsErr, isDNSErr := err.(*net.DNSError)
+		if isDNSErr && dnsErr.IsNotFound {
+			// that's ok, let things continue even if the host does not resolve
+		} else {
+			return errors.Wrap(err, "failed to LookupIP")
+		}
+	}
+
+	for _, ip := range ips {
+		if ip.IsPrivate() || !ip.IsGlobalUnicast() {
+			return ErrPrivateDisallowed
 		}
 	}
 
@@ -83,8 +144,16 @@ func matchesDomain(pattern, domain string) bool {
 	// if the domain matches the pattern with wildcard support
 	j := len(patternParts) - 1
 	for i := len(domainParts) - 1; i >= 0; i-- {
+		if domainParts[i] == "" {
+			// skip over empty members
+			// of the domain being checked
+			i--
+		}
+
 		p := patternParts[j]
 		d := domainParts[i]
+
+		fmt.Println("comparing:", p, d)
 
 		if p == "*" || p == d {
 			// do nothing, they match
@@ -107,6 +176,7 @@ func defaultHTTPRules() HTTPRules {
 		BlockedDomains: []string{},
 		AllowIPs:       true,
 		AllowHTTP:      true,
+		AllowPrivate:   true,
 	}
 
 	return h

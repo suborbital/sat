@@ -1,10 +1,5 @@
 package rcap
 
-import (
-	"os"
-	"strings"
-)
-
 // AuthCapability is a provider for various kinds of auth
 type AuthCapability interface {
 	HeaderForDomain(string) *AuthHeader
@@ -66,22 +61,13 @@ func (ap *defaultAuthProvider) HeaderForDomain(domain string) *AuthHeader {
 	return &header
 }
 
-// augmentHeadersFromEnv takes a an AuthHeader and replaces and `env()` values with their representative values from the environment
+// augmentHeadersFromEnv takes a an AuthHeader and replaces any
+// `env()` values with their representative values from the environment
 func augmentHeaderFromEnv(header AuthHeader) AuthHeader {
-	// turn env(SOME_HEADER_KEY) into SOME_HEADER_KEY
-	if strings.HasPrefix(header.Value, "env(") && strings.HasSuffix(header.Value, ")") {
-		headerKey := strings.TrimPrefix(header.Value, "env(")
-		headerKey = strings.TrimSuffix(headerKey, ")")
-
-		val := os.Getenv(headerKey)
-
-		augmentedHeader := AuthHeader{
-			HeaderType: header.HeaderType,
-			Value:      val,
-		}
-
-		return augmentedHeader
+	augmentedHeader := AuthHeader{
+		HeaderType: header.HeaderType,
+		Value:      AugmentedValFromEnv(header.Value),
 	}
 
-	return header
+	return augmentedHeader
 }

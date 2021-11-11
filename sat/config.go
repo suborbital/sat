@@ -18,12 +18,13 @@ import (
 var useStdin bool
 
 type config struct {
-	modulePath   string
-	runnableName string
-	runnable     *directive.Runnable
-	port         int
-	portString   string
-	useStdin     bool
+	modulePath      string
+	runnableName    string
+	runnable        *directive.Runnable
+	port            int
+	portString      string
+	useStdin        bool
+	controlPlaneUrl string
 }
 
 func configFromArgs(args []string) (*config, error) {
@@ -67,12 +68,15 @@ func configFromArgs(args []string) (*config, error) {
 
 	portInt, _ := strconv.Atoi(port)
 
+	controlPlane := os.Getenv("SAT_CONTROL_PLANE")
+
 	c := &config{
-		modulePath:   modulePath,
-		runnableName: runnableName,
-		port:         portInt,
-		portString:   port,
-		useStdin:     useStdin,
+		modulePath:      modulePath,
+		runnableName:    runnableName,
+		port:            portInt,
+		portString:      port,
+		useStdin:        useStdin,
+		controlPlaneUrl: controlPlane,
 	}
 
 	runnable, err := c.findRunnable()

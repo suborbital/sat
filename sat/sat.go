@@ -9,10 +9,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
@@ -21,18 +25,17 @@ import (
 )
 
 type sat struct {
-	r    *rt.Reactr
-	v    *vk.Server
-	g    *grav.Grav
-	exec rt.JobFunc
-	log  *vlog.Logger
+	r         *rt.Reactr
+	v         *vk.Server
+	g         *grav.Grav
+	exec      rt.JobFunc
+	log       *vlog.Logger
+	appSource appsource.AppSource
 }
 
 // initSat initializes Reactr, Vektor, and Grav instances
 // if config.useStdin is true, only Reactr will be created, returning r, nil, nil
-func initSat(config *config) *sat {
-	r := rt.New()
-
+func initSat(config *config) (*sat, error) {
 	logger := vlog.Default(
 		vlog.EnvPrefix("SAT"),
 	)
@@ -50,6 +53,29 @@ func initSat(config *config) *sat {
 
 	logger.Debug("registering", jobName)
 
+	var appSource appsource.AppSource
+	caps := rcap.DefaultCapabilityConfig()
+
+	if config.controlPlaneUrl != "" {
+		appSource = appsource.NewHTTPSource(config.controlPlaneUrl)
+
+		opts := options.Options{Logger: logger}
+		if err := appSource.Start(opts); err != nil {
+			return nil, errors.Wrap(err, "failed to appSource.Start")
+		}
+
+		rendered, err := capabilities.Render(caps, appSource, logger)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to capabilities.Render")
+		}
+		caps = rendered
+	}
+
+	r, err := rt.NewWithConfig(caps)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to rt.NewWithConfig")
+	}
+
 	exec := r.Register(
 		jobName,
 		rwasm.NewRunner(config.modulePath),
@@ -65,7 +91,7 @@ func initSat(config *config) *sat {
 			exec: exec,
 		}
 
-		return s
+		return s, nil
 	}
 
 	t := websocket.New()
@@ -88,9 +114,9 @@ func initSat(config *config) *sat {
 	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())
 	v.POST("/*any", handler(exec))
 
-	sat := &sat{r, v, g, exec, logger}
+	sat := &sat{r, v, g, exec, logger, appSource}
 
-	return sat
+	return sat, nil
 }
 
 // execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout

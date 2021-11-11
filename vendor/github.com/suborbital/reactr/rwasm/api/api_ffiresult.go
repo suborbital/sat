@@ -25,7 +25,7 @@ func get_ffi_result(pointer int32, identifier int32) int32 {
 		return -1
 	}
 
-	result, err := inst.UseFFIResult()
+	result, err := inst.Ctx().UseFFIResult()
 	if err != nil {
 		runtime.InternalLogger().Error(errors.Wrap(err, "[rwasm] failed to useFFIResult"))
 		return -1

@@ -52,7 +52,7 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 	// fetch writes the http response body into memory starting at returnBodyPointer, and the return value is a pointer to that memory
 	inst, err := runtime.InstanceForIdentifier(identifier, true)
 	if err != nil {
-		runtime.InternalLogger().Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		runtime.InternalLogger().Error(errors.Wrap(err, "[rwasm] alert: failed to InstanceForIdentifier"))
 		return -1
 	}
 
@@ -106,7 +106,7 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 		return respBytes, nil
 	}()
 
-	result, err := inst.SetFFIResult(resp, err)
+	result, err := inst.Ctx().SetFFIResult(resp, err)
 	if err != nil {
 		runtime.InternalLogger().ErrorString("[rwasm] failed to SetFFIResult", err.Error())
 		return -1

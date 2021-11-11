@@ -34,20 +34,28 @@ type Reactr struct {
 
 // New returns a Reactr ready to accept Jobs
 func New() *Reactr {
-	return NewWithConfig(rcap.DefaultCapabilityConfig())
+	// this will never error with the default config, as the db capability is disabled
+	r, _ := NewWithConfig(rcap.DefaultCapabilityConfig())
+
+	return r
 }
 
 // NewWithConfig returns a Reactr with custom capability config
-func NewWithConfig(config rcap.CapabilityConfig) *Reactr {
+func NewWithConfig(config rcap.CapabilityConfig) (*Reactr, error) {
 	core := newCore(config.Logger.Logger)
+
+	caps, err := CapabilitiesFromConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to CapabilitiesFromConfig")
+	}
 
 	r := &Reactr{
 		core:        core,
-		defaultCaps: CapabilitiesFromConfig(config),
+		defaultCaps: *caps,
 		log:         config.Logger.Logger,
 	}
 
-	return r
+	return r, nil
 }
 
 // Do schedules a job to be worked on and returns a result object

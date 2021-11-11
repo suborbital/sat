@@ -18,6 +18,7 @@ type CapabilityConfig struct {
 	Auth           *AuthConfig           `json:"auth,omitempty" yaml:"auth,omitempty"`
 	Cache          *CacheConfig          `json:"cache,omitempty" yaml:"cache,omitempty"`
 	File           *FileConfig           `json:"file,omitempty" yaml:"file,omitempty"`
+	DB             *DatabaseConfig       `json:"db" yaml:"db"`
 	RequestHandler *RequestHandlerConfig `json:"requestHandler,omitempty" yaml:"requestHandler,omitempty"`
 }
 
@@ -26,7 +27,17 @@ func DefaultCapabilityConfig() CapabilityConfig {
 	return DefaultConfigWithLogger(vlog.Default())
 }
 
+// DefaultConfigWithLogger returns a capability config with a custom logger
 func DefaultConfigWithLogger(logger *vlog.Logger) CapabilityConfig {
+	return NewConfig(logger, "", "", nil)
+}
+
+// DefaultConfigWithDB returns a capability config with a custom logger and database configured
+func DefaultConfigWithDB(logger *vlog.Logger, dbType, dbConnString string, queries []Query) CapabilityConfig {
+	return NewConfig(logger, dbType, dbConnString, queries)
+}
+
+func NewConfig(logger *vlog.Logger, dbType, dbConnString string, queries []Query) CapabilityConfig {
 	c := CapabilityConfig{
 		Logger: &LoggerConfig{
 			Enabled: true,
@@ -49,6 +60,12 @@ func DefaultConfigWithLogger(logger *vlog.Logger) CapabilityConfig {
 		},
 		File: &FileConfig{
 			Enabled: true,
+		},
+		DB: &DatabaseConfig{
+			Enabled:          dbConnString != "",
+			DBType:           dbType,
+			ConnectionString: dbConnString,
+			Queries:          queries,
 		},
 		RequestHandler: &RequestHandlerConfig{
 			Enabled:       true,
