@@ -22,7 +22,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		os.Exit(0)
+		return
 	}
 
 	if err := s.v.Start(); err != nil {

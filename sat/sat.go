@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -40,6 +41,7 @@ func initSat(config *config) (*sat, error) {
 		vlog.EnvPrefix("SAT"),
 	)
 
+	// first configure this instance's 'identity'
 	jobName := config.runnableName
 
 	if config.runnable != nil {
@@ -53,6 +55,7 @@ func initSat(config *config) (*sat, error) {
 
 	logger.Debug("registering", jobName)
 
+	// next, determine if config should be fetched from a control plane
 	var appSource appsource.AppSource
 	caps := rcap.DefaultCapabilityConfig()
 
@@ -71,6 +74,8 @@ func initSat(config *config) (*sat, error) {
 		caps = rendered
 	}
 
+	// use the config to create the Reactr instance
+	// and register the Runnable into that instance
 	r, err := rt.NewWithConfig(caps)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to rt.NewWithConfig")
@@ -94,6 +99,8 @@ func initSat(config *config) (*sat, error) {
 		return s, nil
 	}
 
+	// if we're not running in stdin mode, configure Grav
+	// and the Vektor server to start listening for requests
 	t := websocket.New()
 	g := grav.New(
 		grav.UseLogger(logger),
@@ -101,6 +108,19 @@ func initSat(config *config) (*sat, error) {
 		grav.UseDiscovery(local.New()),
 		grav.UseEndpoint(config.portString, "/meta/message"),
 	)
+
+	endpoints, useStatic := os.LookupEnv("SAT_PEERS")
+	if useStatic {
+		epts := strings.Split(endpoints, ",")
+
+		for _, e := range epts {
+			logger.Debug("connecting to static peer", e)
+
+			if err := g.ConnectEndpoint(e); err != nil {
+				return nil, errors.Wrap(err, "failed to ConnectEndpoint")
+			}
+		}
+	}
 
 	r.Listen(g.Connect(), jobName)
 
