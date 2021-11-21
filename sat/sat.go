@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -33,6 +34,8 @@ type sat struct {
 	log       *vlog.Logger
 	appSource appsource.AppSource
 }
+
+var wait bool = false
 
 // initSat initializes Reactr, Vektor, and Grav instances
 // if config.useStdin is true, only Reactr will be created, returning r, nil, nil
@@ -62,7 +65,9 @@ func initSat(config *config) (*sat, error) {
 	if config.controlPlaneUrl != "" {
 		appSource = appsource.NewHTTPSource(config.controlPlaneUrl)
 
-		opts := options.Options{Logger: logger}
+		// configure the appSource not to wait if the controlPlane isn't available
+		opts := options.Options{Logger: logger, Wait: &wait}
+
 		if err := appSource.Start(opts); err != nil {
 			return nil, errors.Wrap(err, "failed to appSource.Start")
 		}
@@ -71,6 +76,7 @@ func initSat(config *config) (*sat, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to capabilities.Render")
 		}
+
 		caps = rendered
 	}
 
@@ -116,8 +122,13 @@ func initSat(config *config) (*sat, error) {
 		for _, e := range epts {
 			logger.Debug("connecting to static peer", e)
 
-			if err := g.ConnectEndpoint(e); err != nil {
-				return nil, errors.Wrap(err, "failed to ConnectEndpoint")
+			for {
+				if err := g.ConnectEndpoint(e); err != nil {
+					logger.Error(errors.Wrap(err, "failed to ConnectEndpoint, will retry"))
+					time.Sleep(time.Second * 3)
+				} else {
+					break
+				}
 			}
 		}
 	}
