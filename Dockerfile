@@ -2,11 +2,17 @@ FROM suborbital/wasmtime:dev as wasmtime
 
 FROM golang:1.17 as builder
 
-RUN mkdir -p /go/sat
 COPY --from=wasmtime /tmp/wasmtime/libwasmtime.a /usr/local/lib
-COPY . /go/sat/
+
+RUN mkdir -p /go/sat
 WORKDIR /go/sat
 
+# Get dependencies first
+COPY go.* ./
+RUN go mod download
+
+# Then everything else
+COPY . /go/sat/
 RUN make sat
 
 FROM gcr.io/distroless/static-debian11
