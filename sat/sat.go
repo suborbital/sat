@@ -22,6 +22,7 @@ import (
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
+	"github.com/suborbital/reactr/rwasm/runtime"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -40,9 +41,12 @@ var wait bool = false
 // initSat initializes Reactr, Vektor, and Grav instances
 // if config.useStdin is true, only Reactr will be created, returning r, nil, nil
 func initSat(config *config) (*sat, error) {
+	// logger for Sat, rwasm runtime, and Runnable output
 	logger := vlog.Default(
 		vlog.EnvPrefix("SAT"),
 	)
+
+	runtime.UseInternalLogger(logger)
 
 	// first configure this instance's 'identity'
 	jobName := config.runnableName
@@ -60,7 +64,7 @@ func initSat(config *config) (*sat, error) {
 
 	// next, determine if config should be fetched from a control plane
 	var appSource appsource.AppSource
-	caps := rcap.DefaultCapabilityConfig()
+	caps := rcap.DefaultConfigWithLogger(logger)
 
 	if config.controlPlaneUrl != "" {
 		appSource = appsource.NewHTTPSource(config.controlPlaneUrl)
