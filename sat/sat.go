@@ -13,7 +13,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
+	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/atmo/options"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -25,6 +27,10 @@ import (
 	"github.com/suborbital/reactr/rwasm/runtime"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+)
+
+const (
+	MsgTypeAtmoFnResult = "atmo.fnresult"
 )
 
 type sat struct {
@@ -137,8 +143,6 @@ func initSat(config *config) (*sat, error) {
 		}
 	}
 
-	r.Listen(g.Connect(), jobName)
-
 	v := vk.New(
 		vk.UseLogger(logger),
 		vk.UseAppName(config.runnableName),
@@ -150,6 +154,8 @@ func initSat(config *config) (*sat, error) {
 	v.POST("/*any", handler(exec))
 
 	sat := &sat{r, v, g, exec, logger, appSource}
+
+	r.ListenAndRun(g.Connect(), jobName, sat.handleFnResult)
 
 	return sat, nil
 }
@@ -214,4 +220,106 @@ func handler(exec rt.JobFunc) vk.HandlerFunc {
 
 		return resp.Output, nil
 	}
+}
+
+func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) {
+	s.log.Info(msg.Type(), "finished executing")
+
+	req := &request.CoordinatedRequest{}
+	if err := json.Unmarshal(msg.Data(), req); err != nil {
+		s.log.Error(errors.Wrap(err, "failed to Unmarshal request"))
+		return
+	}
+
+	steps := []executable.Executable{}
+	if err := json.Unmarshal(req.SequenceJSON, &steps); err != nil {
+		s.log.Error(errors.Wrap(err, "failed to Unmarshal steps"))
+		return
+	}
+
+	seq := sequence.New(steps, nil, nil)
+	step := seq.NextStep()
+	if step == nil {
+		s.log.Error(errors.New("got nil NextStep"))
+		return
+	}
+
+	resp := &request.CoordinatedResponse{}
+	var runErr *rt.RunErr
+	var execErr error
+
+	if fnErr != nil {
+		if fnRunErr, isRunErr := fnErr.(*rt.RunErr); isRunErr {
+			// great, it's a runErr
+			runErr = fnRunErr
+		} else {
+			execErr = fnErr
+		}
+	} else {
+		respJSON := result.([]byte)
+		if err := json.Unmarshal(respJSON, resp); err != nil {
+			s.log.Error(errors.Wrap(err, "failed to Unmarshal response"))
+			return
+		}
+	}
+
+	fnr := sequence.FnResult{
+		FQFN:     msg.Type(),
+		Key:      step.Key(),
+		Response: resp,
+		RunErr:   runErr,
+		ExecErr:  execErr,
+	}
+
+	fnrJSON, err := json.Marshal(fnr)
+	if err != nil {
+		s.log.Error(errors.Wrap(err, "failed to Marshal function result"))
+		return
+	}
+
+	s.log.Info("function", msg.Type(), "completed, sending result")
+
+	pod := s.g.Connect()
+
+	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, msg.ParentID(), fnrJSON)
+	pod.Send(respMsg)
+
+	if runErr != nil {
+		s.log.Info("stopping execution after error returned from", msg.Type(), ":", runErr.Message)
+		return
+	} else if execErr != nil {
+		s.log.Info("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
+		return
+	}
+
+	req.State[fnr.Key] = fnr.Response.Output
+
+	step.Completed = true
+	stepJSON, err := json.Marshal(steps)
+	if err != nil {
+		s.log.Error(errors.Wrap(err, "failed to Marshal steps"))
+	}
+
+	req.SequenceJSON = stepJSON
+
+	s.sendNextStepMsg(pod, msg, seq, req)
+}
+
+func (s *sat) sendNextStepMsg(pod *grav.Pod, msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest) {
+	nextStep := seq.NextStep()
+	if nextStep == nil {
+		s.log.Info("sequence completed, no nextStep message to send")
+		return
+	}
+
+	reqJSON, err := json.Marshal(req)
+	if err != nil {
+		s.log.Error(errors.Wrap(err, "failed to Marshal request"))
+		return
+	}
+
+	s.log.Info("sending next message", nextStep.FQFN)
+
+	nextMsg := grav.NewMsgWithParentID(seq.NextStep().FQFN, msg.ParentID(), reqJSON)
+	pod.Send(nextMsg)
 }

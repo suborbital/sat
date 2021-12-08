@@ -13,7 +13,7 @@ RUN go mod download
 
 # Then everything else
 COPY . /go/sat/
-RUN make sat
+RUN make sat/static
 
 FROM gcr.io/distroless/static-debian11
 
