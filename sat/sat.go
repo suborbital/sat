@@ -4,18 +4,16 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
-	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
+	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -33,13 +31,15 @@ const (
 	MsgTypeAtmoFnResult = "atmo.fnresult"
 )
 
+// sat is a sat server with annoyingly terse field names (because it's smol)
 type sat struct {
-	r         *rt.Reactr
-	v         *vk.Server
-	g         *grav.Grav
-	exec      rt.JobFunc
-	log       *vlog.Logger
-	appSource appsource.AppSource
+	j string // the job name / FQFN
+
+	v *vk.Server
+	g *grav.Grav
+	e *executor.Executor
+	l *vlog.Logger
+	a appsource.AppSource
 }
 
 var wait bool = false
@@ -90,14 +90,10 @@ func initSat(config *config) (*sat, error) {
 		caps = rendered
 	}
 
-	// use the config to create the Reactr instance
-	// and register the Runnable into that instance
-	r, err := rt.NewWithConfig(caps)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to rt.NewWithConfig")
-	}
+	exec := executor.NewWithGrav(logger, nil)
+	exec.UseCapabilityConfig(caps)
 
-	exec := r.Register(
+	exec.Register(
 		jobName,
 		rwasm.NewRunner(config.modulePath),
 		rt.Autoscale(0),
@@ -106,18 +102,20 @@ func initSat(config *config) (*sat, error) {
 		rt.PreWarm(),
 	)
 
-	if config.useStdin {
-		s := &sat{
-			r:    r,
-			exec: exec,
-		}
-
-		return s, nil
+	sat := &sat{
+		j: jobName,
+		e: exec,
+		l: logger,
+		a: appSource,
 	}
 
-	// if we're not running in stdin mode, configure Grav
-	// and the Vektor server to start listening for requests
+	// no need to continue setup if we're in stdin mode, so return here
+	if config.useStdin {
+		return sat, nil
+	}
+
 	t := websocket.New()
+
 	g := grav.New(
 		grav.UseLogger(logger),
 		grav.UseTransport(t),
@@ -125,22 +123,12 @@ func initSat(config *config) (*sat, error) {
 		grav.UseEndpoint(config.portString, "/meta/message"),
 	)
 
-	endpoints, useStatic := os.LookupEnv("SAT_PEERS")
-	if useStatic {
-		epts := strings.Split(endpoints, ",")
+	// set up the Executor to listen for jobs and handle them
+	exec.UseGrav(g)
+	exec.ListenAndRun(jobName, sat.handleFnResult)
 
-		for _, e := range epts {
-			logger.Debug("connecting to static peer", e)
-
-			for {
-				if err := g.ConnectEndpoint(e); err != nil {
-					logger.Error(errors.Wrap(err, "failed to ConnectEndpoint, will retry"))
-					time.Sleep(time.Second * 3)
-				} else {
-					break
-				}
-			}
-		}
+	if err := connectStaticPeers(logger, g); err != nil {
+		log.Fatal(err)
 	}
 
 	v := vk.New(
@@ -151,11 +139,10 @@ func initSat(config *config) (*sat, error) {
 	)
 
 	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())
-	v.POST("/*any", handler(exec))
+	v.POST("/*any", sat.handler(exec))
 
-	sat := &sat{r, v, g, exec, logger, appSource}
-
-	r.ListenAndRun(g.Connect(), jobName, sat.handleFnResult)
+	sat.v = v
+	sat.g = g
 
 	return sat, nil
 }
@@ -171,11 +158,13 @@ func (s *sat) execFromStdin() error {
 
 	input := scanner.Bytes()
 
+	ctx := vk.NewCtx(s.l, nil, nil)
+
 	// construct a fake HTTP request from the input
 	req := &request.CoordinatedRequest{
 		Method:      http.MethodPost,
 		URL:         "/",
-		ID:          uuid.New().String(),
+		ID:          ctx.RequestID(),
 		Body:        input,
 		Headers:     map[string]string{},
 		RespHeaders: map[string]string{},
@@ -183,7 +172,7 @@ func (s *sat) execFromStdin() error {
 		State:       map[string][]byte{},
 	}
 
-	result, err := s.exec(req).Then()
+	result, err := s.e.Do(s.j, req, ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to exec")
 	}
@@ -198,7 +187,7 @@ func (s *sat) execFromStdin() error {
 	return nil
 }
 
-func handler(exec rt.JobFunc) vk.HandlerFunc {
+func (s *sat) handler(exec *executor.Executor) vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
@@ -206,7 +195,7 @@ func handler(exec rt.JobFunc) vk.HandlerFunc {
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
-		result, err := exec(req).Then()
+		result, err := exec.Do(s.j, req, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to exec"))
 			return nil, vk.Wrap(http.StatusTeapot, err)
@@ -222,34 +211,47 @@ func handler(exec rt.JobFunc) vk.HandlerFunc {
 	}
 }
 
+// handleFnResult this is the function mounted onto exec.ListenAndRun, and receives all
+// function results received from meshed peers (i.e. Grav)
 func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) {
-	s.log.Info(msg.Type(), "finished executing")
+	s.l.Info(msg.Type(), "finished executing")
 
-	req := &request.CoordinatedRequest{}
-	if err := json.Unmarshal(msg.Data(), req); err != nil {
-		s.log.Error(errors.Wrap(err, "failed to Unmarshal request"))
+	// first unmarshal the request and sequence information
+	req, err := request.FromJSON(msg.Data())
+	if err != nil {
+		s.l.Error(errors.Wrap(err, "failed to request.FromJSON"))
 		return
 	}
 
-	steps := []executable.Executable{}
-	if err := json.Unmarshal(req.SequenceJSON, &steps); err != nil {
-		s.log.Error(errors.Wrap(err, "failed to Unmarshal steps"))
+	ctx := vk.NewCtx(s.l, nil, nil)
+	ctx.UseRequestID(req.ID)
+
+	seq, err := sequence.FromJSON(req.SequenceJSON, s.e, ctx)
+	if err != nil {
+		s.l.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
 		return
 	}
 
-	seq := sequence.New(steps, nil, nil)
+	// load the request into the sequence so that it can help
+	// updating state and checking error handling behaviour
+	seq.UseRequest(req)
+
+	// figure out where we are in the sequence
 	step := seq.NextStep()
 	if step == nil {
-		s.log.Error(errors.New("got nil NextStep"))
+		s.l.Error(errors.New("got nil NextStep"))
 		return
 	}
 
+	step.SetCompleted(true)
+
+	// start evaluating the result of the function call
 	resp := &request.CoordinatedResponse{}
-	var runErr *rt.RunErr
+	var runErr rt.RunErr
 	var execErr error
 
 	if fnErr != nil {
-		if fnRunErr, isRunErr := fnErr.(*rt.RunErr); isRunErr {
+		if fnRunErr, isRunErr := fnErr.(rt.RunErr); isRunErr {
 			// great, it's a runErr
 			runErr = fnRunErr
 		} else {
@@ -258,67 +260,88 @@ func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	} else {
 		respJSON := result.([]byte)
 		if err := json.Unmarshal(respJSON, resp); err != nil {
-			s.log.Error(errors.Wrap(err, "failed to Unmarshal response"))
+			s.l.Error(errors.Wrap(err, "failed to Unmarshal response"))
 			return
 		}
 	}
 
-	fnr := sequence.FnResult{
+	// package everything up and shuttle it back to the parent (atmo-proxy)
+	fnr := &sequence.FnResult{
 		FQFN:     msg.Type(),
 		Key:      step.Key(),
 		Response: resp,
 		RunErr:   runErr,
-		ExecErr:  execErr,
-	}
+		ExecErr: func() string {
+			if execErr != nil {
+				return execErr.Error()
+			}
 
-	fnrJSON, err := json.Marshal(fnr)
-	if err != nil {
-		s.log.Error(errors.Wrap(err, "failed to Marshal function result"))
-		return
+			return ""
+		}(),
 	}
-
-	s.log.Info("function", msg.Type(), "completed, sending result")
 
 	pod := s.g.Connect()
+	defer pod.Disconnect()
 
-	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, msg.ParentID(), fnrJSON)
-	pod.Send(respMsg)
-
-	if runErr != nil {
-		s.log.Info("stopping execution after error returned from", msg.Type(), ":", runErr.Message)
-		return
-	} else if execErr != nil {
-		s.log.Info("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
+	if err := s.sendFnResult(pod, fnr, ctx); err != nil {
+		s.l.Error(errors.Wrap(err, "failed to sendFnResult"))
 		return
 	}
 
-	req.State[fnr.Key] = fnr.Response.Output
+	// determine if we ourselves should continue or halt the sequence
+	if execErr != nil {
+		s.l.ErrorString("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
+		return
+	}
 
-	step.Completed = true
-	stepJSON, err := json.Marshal(steps)
+	if err := seq.HandleStepErrs([]sequence.FnResult{*fnr}, step); err != nil {
+		s.l.Error(err)
+		return
+	}
+
+	// load the results into the request state
+	seq.HandleStepResults([]sequence.FnResult{*fnr})
+
+	// prepare for the next step in the chain to be executed
+	stepJSON, err := seq.StepsJSON()
 	if err != nil {
-		s.log.Error(errors.Wrap(err, "failed to Marshal steps"))
+		s.l.Error(errors.Wrap(err, "failed to StepsJSON"))
+		return
 	}
 
 	req.SequenceJSON = stepJSON
 
-	s.sendNextStepMsg(pod, msg, seq, req)
+	s.sendNextStep(pod, msg, seq, req)
 }
 
-func (s *sat) sendNextStepMsg(pod *grav.Pod, msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest) {
+func (s *sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx) error {
+	fnrJSON, err := json.Marshal(result)
+	if err != nil {
+		return errors.Wrap(err, "failed to Marshal function result")
+	}
+
+	s.l.Info("function", s.j, "completed, sending result")
+
+	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
+	pod.Send(respMsg)
+
+	return nil
+}
+
+func (s *sat) sendNextStep(pod *grav.Pod, msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest) {
 	nextStep := seq.NextStep()
 	if nextStep == nil {
-		s.log.Info("sequence completed, no nextStep message to send")
+		s.l.Info("sequence completed, no nextStep message to send")
 		return
 	}
 
 	reqJSON, err := json.Marshal(req)
 	if err != nil {
-		s.log.Error(errors.Wrap(err, "failed to Marshal request"))
+		s.l.Error(errors.Wrap(err, "failed to Marshal request"))
 		return
 	}
 
-	s.log.Info("sending next message", nextStep.FQFN)
+	s.l.Info("sending next message", nextStep.FQFN)
 
 	nextMsg := grav.NewMsgWithParentID(seq.NextStep().FQFN, msg.ParentID(), reqJSON)
 	pod.Send(nextMsg)

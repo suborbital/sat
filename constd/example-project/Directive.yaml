@@ -24,6 +24,15 @@ handlers:
       - fn: cache-get
 
   - type: request
+    resource: /goodbye/:key
+    method: POST
+    steps:
+      - fn: helloworld-rs
+      - fn: cache-set
+      - fn: cache-get
+      - fn: return-err
+
+  - type: request
     resource: /set/:key
     method: POST
     steps:
