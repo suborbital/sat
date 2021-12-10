@@ -31,16 +31,12 @@ This will build the `suborbital/sat:dev` Docker image and then launch it using t
 As an alternative to running Sat as a server, you can also use it in `stdin` mode. First, build Sat:
 ```bash
 make sat
-OR
-make sat/dynamic #on macOS
 ```
 Then, run Sat with an input on stdin:
 ```bash
 echo "world" | .bin/sat --stdin ./examples/hello-echo/hello-echo.wasm
 ```
 Sat will write the response to stdout and exit.
-
-Note that statically compiling Sat on macOS is not currently possible, and compiling on M1 Macs is not possible unless you build Wasmtime from source, hence Docker as the reccomended method.
 
 ### Run from URL
 If you provide a URL as the path argument to Sat, it will download the module from that URL, write it to a temp directory, and use it for execution:
@@ -49,7 +45,14 @@ If you provide a URL as the path argument to Sat, it will download the module fr
 ```
 The URL must be HTTPS and must have a `.wasm` suffix (excluding query parameters)
 
+### Statically compiling
+The `make sat` target creates a dynamically linked binary. To create a statically linked version, run:
+```bash
+make sat/static
+```
+Static linking is not available on Mac.
+
 ### Constellations
-Sat is designed to run in a constellation, i.e. a meshed cluster of instances. This enables very interesting network topologies which can run applications in massively distributed and 'edge' environments. This repo includes the `constd` tool, which is an experiment-atop-experiment constellation manager that can run [Atmo](https://github.com/suborbital/atmo) applications in a distributed manner. You can learn more [here](./constd).
+Sat is designed to run in a constellation, i.e. a meshed cluster of instances. This enables very interesting network topologies which can run applications in massively distributed and 'edge' environments. This repo includes the `constd` tool, which is an experiment-atop-experiment constellation manager that can run [Atmo](https://github.com/suborbital/atmo) applications in a distributed manner using a Sat constellation. You can learn more [here](./constd).
 
 Copyright Suborbital contributors 2021.
