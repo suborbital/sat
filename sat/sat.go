@@ -243,7 +243,7 @@ func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 		return
 	}
 
-	step.SetCompleted(true)
+	step.Completed = true
 
 	// start evaluating the result of the function call
 	resp := &request.CoordinatedResponse{}
@@ -268,7 +268,7 @@ func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	// package everything up and shuttle it back to the parent (atmo-proxy)
 	fnr := &sequence.FnResult{
 		FQFN:     msg.Type(),
-		Key:      step.Key(),
+		Key:      step.Exec.CallableFn.Key(), // to support groups, we'll need to find the correct CallableFn in the list
 		Response: resp,
 		RunErr:   runErr,
 		ExecErr: func() string {
@@ -294,7 +294,7 @@ func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 		return
 	}
 
-	if err := seq.HandleStepErrs([]sequence.FnResult{*fnr}, step); err != nil {
+	if err := seq.HandleStepErrs([]sequence.FnResult{*fnr}, step.Exec); err != nil {
 		s.l.Error(err)
 		return
 	}
@@ -320,6 +320,8 @@ func (s *sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx
 		return errors.Wrap(err, "failed to Marshal function result")
 	}
 
+	fmt.Println("RESULT:", string(fnrJSON))
+
 	s.l.Info("function", s.j, "completed, sending result")
 
 	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
@@ -341,8 +343,8 @@ func (s *sat) sendNextStep(pod *grav.Pod, msg grav.Message, seq *sequence.Sequen
 		return
 	}
 
-	s.l.Info("sending next message", nextStep.FQFN)
+	s.l.Info("sending next message", nextStep.Exec.FQFN)
 
-	nextMsg := grav.NewMsgWithParentID(seq.NextStep().FQFN, msg.ParentID(), reqJSON)
+	nextMsg := grav.NewMsgWithParentID(nextStep.Exec.FQFN, msg.ParentID(), reqJSON)
 	pod.Send(nextMsg)
 }
