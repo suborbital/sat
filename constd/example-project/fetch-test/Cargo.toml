@@ -1,5 +1,5 @@
 [package]
-name = "http-cap"
+name = "fetch-test"
 version = "0.1.0"
 authors = ["Suborbital Runnable <info@suborbital.dev>"]
 edition = "2018"

@@ -1,9 +1,9 @@
 
 sat:
-	go build -o .bin/sat -tags netgo,wasmtime -ldflags="-extldflags=-static" ./sat
-
-sat/dynamic:
 	go build -o .bin/sat -tags netgo,wasmtime ./sat
+
+sat/static:
+	go build -o .bin/sat -tags netgo,wasmtime -ldflags="-extldflags=-static" ./sat
 
 docker:
 	docker build . -t suborbital/sat:dev
