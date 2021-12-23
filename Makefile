@@ -5,6 +5,9 @@ sat:
 sat/static:
 	go build -o .bin/sat -tags netgo,wasmtime -ldflags="-extldflags=-static" ./sat
 
+sat/install:
+	go install -tags netgo,wasmtime ./sat
+
 docker:
 	docker build . -t suborbital/sat:dev
 
@@ -30,6 +33,9 @@ constd:
 	go build -o .bin/constd -tags netgo -ldflags="-extldflags=-static" ./constd
 
 constd/dev:
-	CONSTD_SAT_TAG=dev .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
+	CONSTD_ATMO_VERSION=dev CONSTD_SAT_VERSION=dev .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
+
+constd/metal:
+	CONSTD_EXEC_MODE=metal .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
 
 .PHONY: sat constd
