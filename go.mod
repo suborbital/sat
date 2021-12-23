@@ -20,7 +20,6 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -31,19 +30,9 @@ require (
 	github.com/jackc/pgx/v4 v4.14.1 // indirect
 	github.com/jmoiron/sqlx v1.3.4 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
-	github.com/klauspost/compress v1.13.5 // indirect
-	github.com/nats-io/nats.go v1.13.0 // indirect
-	github.com/nats-io/nkeys v0.3.0 // indirect
-	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/pierrec/lz4/v4 v4.1.8 // indirect
 	github.com/schollz/peerdiscovery v1.6.9 // indirect
 	github.com/second-state/WasmEdge-go v0.9.0 // indirect
 	github.com/sethvargo/go-envconfig v0.4.0 // indirect
-	github.com/spf13/cobra v1.2.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/twmb/franz-go v1.2.3 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20211104051938-70808186d5f7 // indirect
-	github.com/twmb/go-rbtree v1.0.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
 	golang.org/x/mod v0.5.1 // indirect

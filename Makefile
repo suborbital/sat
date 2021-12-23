@@ -29,4 +29,7 @@ run:
 constd:
 	go build -o .bin/constd -tags netgo -ldflags="-extldflags=-static" ./constd
 
+constd/dev:
+	CONSTD_SAT_TAG=dev .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
+
 .PHONY: sat constd

@@ -11,49 +11,98 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/vektor/vlog"
 	"gopkg.in/yaml.v2"
 )
 
 var useStdin bool
 
 type config struct {
-	modulePath      string
+	runnableArg     string
 	runnableName    string
 	runnable        *directive.Runnable
+	capConfig       rcap.CapabilityConfig
 	port            int
 	portString      string
 	useStdin        bool
 	controlPlaneUrl string
 }
 
-func configFromArgs(args []string) (*config, error) {
+func configFromArgs(logger *vlog.Logger) (*config, error) {
 	flag.Parse()
+	args := flag.Args()
 
-	if len(args) < 2 {
-		return nil, errors.New("missing argument: module path")
+	if len(args) < 1 {
+		return nil, errors.New("missing argument: runnable (path, URL or FQFN)")
 	}
 
-	modulePath := args[1]
-	if strings.HasPrefix(modulePath, "-") {
-		for i := 2; i < len(args); i++ {
-			if !strings.HasPrefix(args[i], "-") {
-				modulePath = args[i]
-				break
-			}
+	runnableArg := args[0]
+
+	var runnable *directive.Runnable
+
+	controlPlane, useControlPlane := os.LookupEnv("SAT_CONTROL_PLANE")
+	appClient := appsource.NewHTTPSource(controlPlane)
+	caps := rcap.DefaultConfigWithLogger(logger)
+
+	if useControlPlane {
+		// configure the appSource not to wait if the controlPlane isn't available
+		opts := options.Options{Logger: logger, Wait: &wait, Headless: &headless}
+
+		if err := appClient.Start(opts); err != nil {
+			return nil, errors.Wrap(err, "failed to appSource.Start")
 		}
+
+		rendered, err := capabilities.Render(caps, appClient, logger)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to capabilities.Render")
+		}
+
+		caps = rendered
 	}
 
-	if isURL(modulePath) {
-		tmpFile, err := downloadFromURL(modulePath)
+	// handle the runnable arg being a URL, an FQFN, or a path on disk
+	if isURL(runnableArg) {
+		logger.Debug("fetching module from URL")
+		tmpFile, err := downloadFromURL(runnableArg)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to downloadFromURL")
 		}
 
-		modulePath = tmpFile
-	}
+		runnableArg = tmpFile
+	} else if FQFN := fqfn.Parse(runnableArg); FQFN.Identifier != "" {
+		if useControlPlane {
+			logger.Debug("fetching module from control plane")
 
-	runnableName := strings.TrimSuffix(filepath.Base(modulePath), ".wasm")
+			cpRunnable, err := appClient.FindRunnable(runnableArg, "")
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to FindRunnable")
+			}
+
+			runnable = cpRunnable
+		}
+	} else {
+		diskRunnable, err := findRunnableDotYaml(runnableArg)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to findRunnable")
+		}
+
+		if diskRunnable != nil {
+			ident, iExists := os.LookupEnv("SAT_RUNNABLE_IDENT")
+			version, vExists := os.LookupEnv("SAT_RUNNABLE_VERSION")
+			if iExists && vExists {
+				FQFN := fqfn.FromParts(ident, runnable.Namespace, runnable.Name, version)
+				runnable.FQFN = FQFN
+			}
+		}
+
+		runnable = diskRunnable
+	}
 
 	port, ok := os.LookupEnv("SAT_HTTP_PORT")
 	if !ok {
@@ -68,30 +117,25 @@ func configFromArgs(args []string) (*config, error) {
 
 	portInt, _ := strconv.Atoi(port)
 
-	controlPlane := os.Getenv("SAT_CONTROL_PLANE")
+	runnableName := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
 
 	c := &config{
-		modulePath:      modulePath,
+		runnableArg:     runnableArg,
 		runnableName:    runnableName,
+		runnable:        runnable,
+		capConfig:       caps,
 		port:            portInt,
 		portString:      port,
 		useStdin:        useStdin,
 		controlPlaneUrl: controlPlane,
 	}
 
-	runnable, err := c.findRunnable()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to findRunnable")
-	}
-
-	c.runnable = runnable
-
 	return c, nil
 }
 
-func (c *config) findRunnable() (*directive.Runnable, error) {
-	filename := filepath.Base(c.modulePath)
-	runnableFilepath := strings.Replace(c.modulePath, filename, ".runnable.yml", -1)
+func findRunnableDotYaml(runnableArg string) (*directive.Runnable, error) {
+	filename := filepath.Base(runnableArg)
+	runnableFilepath := strings.Replace(runnableArg, filename, ".runnable.yml", -1)
 
 	if _, err := os.Stat(runnableFilepath); err != nil {
 		// .runnable.yaml doesn't exist, don't bother returning error
