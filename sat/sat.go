@@ -46,7 +46,7 @@ func initSat(logger *vlog.Logger, config *config) (*sat, error) {
 
 	// first configure this instance's 'identity'
 	jobName := config.runnableName
-	if config.runnable.FQFN != "" {
+	if config.runnable != nil && config.runnable.FQFN != "" {
 		jobName = config.runnable.FQFN
 	}
 

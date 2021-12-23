@@ -46,6 +46,7 @@ func configFromArgs(logger *vlog.Logger) (*config, error) {
 
 	var runnable *directive.Runnable
 
+	// first, determine if we need to connect to a control plane
 	controlPlane, useControlPlane := os.LookupEnv("SAT_CONTROL_PLANE")
 	appClient := appsource.NewHTTPSource(controlPlane)
 	caps := rcap.DefaultConfigWithLogger(logger)
@@ -66,7 +67,7 @@ func configFromArgs(logger *vlog.Logger) (*config, error) {
 		caps = rendered
 	}
 
-	// handle the runnable arg being a URL, an FQFN, or a path on disk
+	// next, handle the runnable arg being a URL, an FQFN, or a path on disk
 	if isURL(runnableArg) {
 		logger.Debug("fetching module from URL")
 		tmpFile, err := downloadFromURL(runnableArg)
@@ -104,6 +105,7 @@ func configFromArgs(logger *vlog.Logger) (*config, error) {
 		runnable = diskRunnable
 	}
 
+	// next, figure out the configuration of the HTTP server
 	port, ok := os.LookupEnv("SAT_HTTP_PORT")
 	if !ok {
 		// choose a random port above 1000
@@ -119,6 +121,7 @@ func configFromArgs(logger *vlog.Logger) (*config, error) {
 
 	runnableName := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
 
+	// finally, put it all together
 	c := &config{
 		runnableArg:     runnableArg,
 		runnableName:    runnableName,
