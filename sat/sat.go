@@ -9,16 +9,11 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
-	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
@@ -39,63 +34,37 @@ type sat struct {
 	g *grav.Grav
 	e *executor.Executor
 	l *vlog.Logger
-	a appsource.AppSource
 }
 
 var wait bool = false
+var headless bool = false
 
 // initSat initializes Reactr, Vektor, and Grav instances
 // if config.useStdin is true, only Reactr will be created, returning r, nil, nil
-func initSat(config *config) (*sat, error) {
-	// logger for Sat, rwasm runtime, and Runnable output
-	logger := vlog.Default(
-		vlog.EnvPrefix("SAT"),
-	)
-
+func initSat(logger *vlog.Logger, config *config) (*sat, error) {
 	runtime.UseInternalLogger(logger)
 
 	// first configure this instance's 'identity'
 	jobName := config.runnableName
-
-	if config.runnable != nil {
-		ident, iExists := os.LookupEnv("SAT_RUNNABLE_IDENT")
-		version, vExists := os.LookupEnv("SAT_RUNNABLE_VERSION")
-		if iExists && vExists {
-			logger.Debug("configuring with .runnable.yaml")
-			jobName = fqfn.FromParts(ident, config.runnable.Namespace, config.runnable.Name, version)
-		}
+	if config.runnable != nil && config.runnable.FQFN != "" {
+		jobName = config.runnable.FQFN
 	}
 
 	logger.Debug("registering", jobName)
 
-	// next, determine if config should be fetched from a control plane
-	var appSource appsource.AppSource
-	caps := rcap.DefaultConfigWithLogger(logger)
-
-	if config.controlPlaneUrl != "" {
-		appSource = appsource.NewHTTPSource(config.controlPlaneUrl)
-
-		// configure the appSource not to wait if the controlPlane isn't available
-		opts := options.Options{Logger: logger, Wait: &wait}
-
-		if err := appSource.Start(opts); err != nil {
-			return nil, errors.Wrap(err, "failed to appSource.Start")
-		}
-
-		rendered, err := capabilities.Render(caps, appSource, logger)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to capabilities.Render")
-		}
-
-		caps = rendered
-	}
-
 	exec := executor.NewWithGrav(logger, nil)
-	exec.UseCapabilityConfig(caps)
+	exec.UseCapabilityConfig(config.capConfig)
+
+	var runner rt.Runnable
+	if config.runnable != nil && len(config.runnable.ModuleRef.Data) > 0 {
+		runner = rwasm.NewRunnerWithRef(config.runnable.ModuleRef)
+	} else {
+		runner = rwasm.NewRunner(config.runnableArg)
+	}
 
 	exec.Register(
 		jobName,
-		rwasm.NewRunner(config.modulePath),
+		runner,
 		rt.Autoscale(0),
 		rt.MaxRetries(0),
 		rt.RetrySeconds(0),
@@ -106,7 +75,6 @@ func initSat(config *config) (*sat, error) {
 		j: jobName,
 		e: exec,
 		l: logger,
-		a: appSource,
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
@@ -319,8 +287,6 @@ func (s *sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx
 	if err != nil {
 		return errors.Wrap(err, "failed to Marshal function result")
 	}
-
-	fmt.Println("RESULT:", string(fnrJSON))
 
 	s.l.Info("function", s.j, "completed, sending result")
 

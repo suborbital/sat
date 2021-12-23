@@ -2,17 +2,23 @@ package main
 
 import (
 	"log"
-	"os"
+
+	"github.com/suborbital/vektor/vlog"
 )
 
 func main() {
-	config, err := configFromArgs(os.Args)
+	// logger for Sat, rwasm runtime, and Runnable output
+	logger := vlog.Default(
+		vlog.EnvPrefix("SAT"),
+	)
+
+	config, err := configFromArgs(logger)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
-	s, err := initSat(config)
+	s, err := initSat(logger, config)
 	if err != nil {
 		log.Fatal(err)
 	}
