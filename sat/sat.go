@@ -56,7 +56,7 @@ func initSat(logger *vlog.Logger, config *config) (*sat, error) {
 	exec.UseCapabilityConfig(config.capConfig)
 
 	var runner rt.Runnable
-	if len(config.runnable.ModuleRef.Data) != 0 {
+	if config.runnable != nil && len(config.runnable.ModuleRef.Data) > 0 {
 		runner = rwasm.NewRunnerWithRef(config.runnable.ModuleRef)
 	} else {
 		runner = rwasm.NewRunner(config.runnableArg)
