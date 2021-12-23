@@ -1,53 +1,55 @@
 package main
 
 import (
-	"crypto/rand"
 	"fmt"
 	"log"
-	"math/big"
 	"os"
-	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/subo/subo/util"
 )
 
+type config struct {
+	bundlePath string
+	execMode   string
+	satTag     string
+	atmoTag    string
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("missing argument: bundle")
+	config, err := loadConfig()
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "failed to loadConfig"))
 	}
 
-	bundlePath := os.Args[1]
+	appSource, errchan := startAppSourceServer(config.bundlePath)
 
-	appSource, errchan := startAppSourceServer(bundlePath)
+	startAtmo(config, errchan)
 
-	startAtmo(bundlePath, errchan)
-
-	startConstellation(appSource, errchan)
+	startConstellation(config, appSource, errchan)
 
 	// assuming nothing above throws an error, this will block forever
-	if err := <-errchan; err != nil {
-		log.Fatal(errors.Wrap(err, "failed to startAppSourceServer"))
+	for err := range errchan {
+		log.Fatal(errors.Wrap(err, "encountered error"))
 	}
 }
 
-func startAtmo(bundlePath string, errchan chan error) {
-	mountPath := filepath.Dir(bundlePath)
-
+func startAtmo(config *config, errchan chan error) {
 	go func() {
-		if _, err := util.Run(fmt.Sprintf("docker run -p 8080:8080 -e ATMO_HTTP_PORT=8080 -e ATMO_CONTROL_PLANE=docker.for.mac.localhost:9090 -v %s:/home/atmo --network bridge suborbital/atmo-proxy:dev atmo-proxy", mountPath)); err != nil {
-			errchan <- errors.Wrap(err, "failed to Run Atmo")
+		for {
+			// repeat forever in case the command does error out
+			if _, err := util.Run(atmoCommand(config)); err != nil {
+				errchan <- errors.Wrap(err, "failed to Run Atmo")
+			}
+
+			time.Sleep(time.Millisecond * 200)
 		}
 	}()
 }
 
-func startConstellation(appSource appsource.AppSource, errchan chan error) {
-	satTag := "latest"
-	if tag, exists := os.LookupEnv("CONSTD_SAT_TAG"); exists {
-		satTag = tag
-	}
-
+func startConstellation(config *config, appSource appsource.AppSource, errchan chan error) {
 	runnables := appSource.Runnables()
 
 	for i := range runnables {
@@ -56,34 +58,46 @@ func startConstellation(appSource appsource.AppSource, errchan chan error) {
 		go func() {
 			fmt.Printf("launching %s\n", runnable.FQFN)
 
-			port, err := randPort()
-			if err != nil {
-				log.Fatal(errors.Wrap(err, "failed to randPort"))
-			}
-
 			for {
-				_, err := util.Run(fmt.Sprintf(
-					"docker run --rm -p %s:%s -e SAT_HTTP_PORT=%s -e SAT_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge --name %s suborbital/sat:%s sat %s",
-					port, port, port,
-					runnable.Name,
-					satTag,
-					runnable.FQFN,
-				))
-
-				if err != nil {
+				// repeat forever in case the command does error out
+				if _, err := util.Run(satCommand(config, runnable)); err != nil {
 					errchan <- errors.Wrap(err, "sat exited with error")
 				}
+
+				time.Sleep(time.Millisecond * 200)
 			}
 		}()
 	}
 }
 
-func randPort() (string, error) {
-	// choose a random port above 1000
-	randPort, err := rand.Int(rand.Reader, big.NewInt(10000))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to rand.Int")
+func loadConfig() (*config, error) {
+	if len(os.Args) < 2 {
+		return nil, errors.New("missing required argument: bundle path")
 	}
 
-	return fmt.Sprintf("%d", randPort.Int64()+10000), nil
+	bundlePath := os.Args[1]
+
+	satVersion := "latest"
+	if version, sExists := os.LookupEnv("CONSTD_SAT_VERSION"); sExists {
+		satVersion = version
+	}
+
+	atmoVersion := "latest"
+	if version, aExists := os.LookupEnv("CONSTD_ATMO_VERSION"); aExists {
+		atmoVersion = version
+	}
+
+	execMode := "docker"
+	if mode, eExists := os.LookupEnv("CONSTD_EXEC_MODE"); eExists {
+		execMode = mode
+	}
+
+	c := &config{
+		bundlePath: bundlePath,
+		execMode:   execMode,
+		satTag:     satVersion,
+		atmoTag:    atmoVersion,
+	}
+
+	return c, nil
 }

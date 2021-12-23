@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/suborbital/atmo v0.4.3-0.20211212184131-ffd6ad1ee4e0
+	github.com/suborbital/atmo v0.4.3-0.20211212184639-4f84ee42de51
 	github.com/suborbital/grav v0.4.2
-	github.com/suborbital/reactr v0.12.1-0.20211209205102-eb9956869f81
+	github.com/suborbital/reactr v0.12.1-0.20211214153447-ebdc67cf0ffd
 	github.com/suborbital/subo v0.1.0
 	github.com/suborbital/vektor v0.5.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -16,6 +16,7 @@ require (
 	github.com/bytecodealliance/wasmtime-go v0.31.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-redis/redis/v8 v8.11.4 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -30,13 +31,14 @@ require (
 	github.com/jackc/pgx/v4 v4.14.1 // indirect
 	github.com/jmoiron/sqlx v1.3.4 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
+	github.com/kr/pretty v0.2.0 // indirect
 	github.com/schollz/peerdiscovery v1.6.9 // indirect
-	github.com/second-state/WasmEdge-go v0.9.0 // indirect
+	github.com/second-state/WasmEdge-go v0.9.0-rc5 // indirect
 	github.com/sethvargo/go-envconfig v0.4.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
-	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
 	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
+	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211209171907-798191bca915 // indirect
 	golang.org/x/text v0.3.7 // indirect
