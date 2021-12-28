@@ -1,4 +1,4 @@
-package main
+package sat
 
 import (
 	"crypto/rand"
@@ -24,24 +24,24 @@ import (
 
 var useStdin bool
 
-type config struct {
-	runnableArg     string
-	jobType         string
-	prettyName      string
-	runnable        *directive.Runnable
-	identifier      string
-	capConfig       rcap.CapabilityConfig
-	port            int
-	useStdin        bool
-	controlPlaneUrl string
-	logger          *vlog.Logger
+type Config struct {
+	RunnableArg     string
+	JobType         string
+	PrettyName      string
+	Runnable        *directive.Runnable
+	Identifier      string
+	CapConfig       rcap.CapabilityConfig
+	Port            int
+	UseStdin        bool
+	ControlPlaneUrl string
+	Logger          *vlog.Logger
 }
 
 type app struct {
 	Name string `json:"name"`
 }
 
-func configFromArgs() (*config, error) {
+func ConfigFromArgs() (*Config, error) {
 	flag.Parse()
 	args := flag.Args()
 
@@ -159,17 +159,17 @@ func configFromArgs() (*config, error) {
 	}
 
 	// finally, put it all together
-	c := &config{
-		runnableArg:     runnableArg,
-		jobType:         jobType,
-		prettyName:      prettyName,
-		runnable:        runnable,
-		identifier:      FQFN.Identifier,
-		capConfig:       caps,
-		port:            portInt,
-		useStdin:        useStdin,
-		controlPlaneUrl: controlPlane,
-		logger:          logger,
+	c := &Config{
+		RunnableArg:     runnableArg,
+		JobType:         jobType,
+		PrettyName:      prettyName,
+		Runnable:        runnable,
+		Identifier:      FQFN.Identifier,
+		CapConfig:       caps,
+		Port:            portInt,
+		UseStdin:        useStdin,
+		ControlPlaneUrl: controlPlane,
+		Logger:          logger,
 	}
 
 	return c, nil

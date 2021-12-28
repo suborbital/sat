@@ -1,4 +1,4 @@
-package main
+package sat
 
 import (
 	"bufio"
@@ -27,7 +27,7 @@ const (
 )
 
 // sat is a sat server with annoyingly terse field names (because it's smol)
-type sat struct {
+type Sat struct {
 	j string // the job name / FQFN
 
 	v *vk.Server
@@ -39,23 +39,23 @@ type sat struct {
 var wait bool = false
 var headless bool = false
 
-// initSat initializes Reactr, Vektor, and Grav instances
-// if config.useStdin is true, only Reactr will be created, returning r, nil, nil
-func initSat(config *config) (*sat, error) {
-	runtime.UseInternalLogger(config.logger)
+// New initializes Reactr, Vektor, and Grav in a Sat instance
+// if config.UseStdin is true, only Reactr will be created
+func New(config *Config) (*Sat, error) {
+	runtime.UseInternalLogger(config.Logger)
 
-	exec := executor.NewWithGrav(config.logger, nil)
-	exec.UseCapabilityConfig(config.capConfig)
+	exec := executor.NewWithGrav(config.Logger, nil)
+	exec.UseCapabilityConfig(config.CapConfig)
 
 	var runner rt.Runnable
-	if config.runnable != nil && len(config.runnable.ModuleRef.Data) > 0 {
-		runner = rwasm.NewRunnerWithRef(config.runnable.ModuleRef)
+	if config.Runnable != nil && len(config.Runnable.ModuleRef.Data) > 0 {
+		runner = rwasm.NewRunnerWithRef(config.Runnable.ModuleRef)
 	} else {
-		runner = rwasm.NewRunner(config.runnableArg)
+		runner = rwasm.NewRunner(config.RunnableArg)
 	}
 
 	exec.Register(
-		config.jobType,
+		config.JobType,
 		runner,
 		rt.Autoscale(0),
 		rt.MaxRetries(0),
@@ -63,14 +63,14 @@ func initSat(config *config) (*sat, error) {
 		rt.PreWarm(),
 	)
 
-	sat := &sat{
-		j: config.jobType,
+	sat := &Sat{
+		j: config.JobType,
 		e: exec,
-		l: config.logger,
+		l: config.Logger,
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
-	if config.useStdin {
+	if config.UseStdin {
 		return sat, nil
 	}
 
@@ -79,30 +79,31 @@ func initSat(config *config) (*sat, error) {
 	// configure Grav to join the mesh for its appropriate application
 	// and broadcast its capability (i.e. the loaded function)
 	g := grav.New(
-		grav.UseBelongsTo(config.identifier),
-		grav.UseCapabilities(config.jobType),
-		grav.UseLogger(config.logger),
+		grav.UseBelongsTo(config.Identifier),
+		grav.UseCapabilities(config.JobType),
+		grav.UseLogger(config.Logger),
 		grav.UseTransport(t),
 		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(fmt.Sprintf("%d", config.port), "/meta/message"),
+		grav.UseEndpoint(fmt.Sprintf("%d", config.Port), "/meta/message"),
 	)
 
 	// set up the Executor to listen for jobs and handle them
 	exec.UseGrav(g)
-	exec.ListenAndRun(config.jobType, sat.handleFnResult)
+	exec.ListenAndRun(config.JobType, sat.handleFnResult)
 
-	if err := connectStaticPeers(config.logger, g); err != nil {
+	if err := connectStaticPeers(config.Logger, g); err != nil {
 		log.Fatal(err)
 	}
 
 	v := vk.New(
-		vk.UseLogger(config.logger),
-		vk.UseAppName(config.prettyName),
-		vk.UseHTTPPort(config.port),
+		vk.UseLogger(config.Logger),
+		vk.UseAppName(config.PrettyName),
+		vk.UseHTTPPort(config.Port),
 		vk.UseEnvPrefix("SAT"),
 	)
 
 	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())
+	v.GET("/meta/metrics", sat.metricsHandler())
 	v.POST("/*any", sat.handler(exec))
 
 	sat.v = v
@@ -111,8 +112,13 @@ func initSat(config *config) (*sat, error) {
 	return sat, nil
 }
 
+// Start starts Sat's Vektor server
+func (s *Sat) Start() error {
+	return s.v.Start()
+}
+
 // execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout
-func (s *sat) execFromStdin() error {
+func (s *Sat) ExecFromStdin() error {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 
@@ -151,7 +157,7 @@ func (s *sat) execFromStdin() error {
 	return nil
 }
 
-func (s *sat) handler(exec *executor.Executor) vk.HandlerFunc {
+func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
@@ -177,7 +183,7 @@ func (s *sat) handler(exec *executor.Executor) vk.HandlerFunc {
 
 // handleFnResult this is the function mounted onto exec.ListenAndRun, and receives all
 // function results received from meshed peers (i.e. Grav)
-func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) {
+func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) {
 	s.l.Info(msg.Type(), "finished executing")
 
 	// first unmarshal the request and sequence information
@@ -278,7 +284,7 @@ func (s *sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	s.sendNextStep(pod, msg, seq, req)
 }
 
-func (s *sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx) error {
+func (s *Sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx) error {
 	fnrJSON, err := json.Marshal(result)
 	if err != nil {
 		return errors.Wrap(err, "failed to Marshal function result")
@@ -292,7 +298,7 @@ func (s *sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx
 	return nil
 }
 
-func (s *sat) sendNextStep(pod *grav.Pod, msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest) {
+func (s *Sat) sendNextStep(pod *grav.Pod, msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest) {
 	nextStep := seq.NextStep()
 	if nextStep == nil {
 		s.l.Info("sequence completed, no nextStep message to send")

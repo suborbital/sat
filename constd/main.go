@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/subo/subo/util"
+	"github.com/suborbital/sat/constd/exec"
 )
 
 type config struct {
@@ -40,7 +40,7 @@ func startAtmo(config *config, errchan chan error) {
 	go func() {
 		for {
 			// repeat forever in case the command does error out
-			if _, err := util.Run(atmoCommand(config)); err != nil {
+			if err := exec.Run(atmoCommand(config)); err != nil {
 				errchan <- errors.Wrap(err, "failed to Run Atmo")
 			}
 
@@ -56,11 +56,18 @@ func startConstellation(config *config, appSource appsource.AppSource, errchan c
 		runnable := runnables[i]
 
 		launch := func() {
-			fmt.Printf("launching %s\n", runnable.FQFN)
-
 			for {
+				fmt.Printf("launching %s\n", runnable.FQFN)
+				cmd, port := satCommand(config, runnable)
+
 				// repeat forever in case the command does error out
-				if _, err := util.Run(satCommand(config, runnable)); err != nil {
+				err := exec.Run(
+					cmd,
+					"SAT_CONTROL_PLANE=localhost:9090",
+					fmt.Sprintf("SAT_HTTP_PORT=%s", port),
+				)
+
+				if err != nil {
 					errchan <- errors.Wrap(err, "sat exited with error")
 				}
 

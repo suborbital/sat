@@ -7,7 +7,6 @@ require (
 	github.com/suborbital/atmo v0.4.3-0.20211212184639-4f84ee42de51
 	github.com/suborbital/grav v0.4.3-0.20211224045646-623c17de4d02
 	github.com/suborbital/reactr v0.12.1-0.20211214153447-ebdc67cf0ffd
-	github.com/suborbital/subo v0.1.0
 	github.com/suborbital/vektor v0.5.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -42,6 +41,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/text v0.3.7 // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
 
 replace github.com/bytecodealliance/wasmtime-go => github.com/suborbital/wasmtime-go v0.31.0-subo
