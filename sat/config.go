@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	"log"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -25,18 +26,28 @@ var useStdin bool
 
 type config struct {
 	runnableArg     string
-	runnableName    string
+	jobType         string
+	prettyName      string
 	runnable        *directive.Runnable
+	identifier      string
 	capConfig       rcap.CapabilityConfig
 	port            int
-	portString      string
 	useStdin        bool
 	controlPlaneUrl string
+	logger          *vlog.Logger
 }
 
-func configFromArgs(logger *vlog.Logger) (*config, error) {
+type app struct {
+	Name string `json:"name"`
+}
+
+func configFromArgs() (*config, error) {
 	flag.Parse()
 	args := flag.Args()
+
+	logger := vlog.Default(
+		vlog.EnvPrefix("SAT"),
+	)
 
 	if len(args) < 1 {
 		return nil, errors.New("missing argument: runnable (path, URL or FQFN)")
@@ -117,20 +128,48 @@ func configFromArgs(logger *vlog.Logger) (*config, error) {
 		port = fmt.Sprintf("%d", randPort.Int64()+1000)
 	}
 
+	// set some defaults in the case we're not running in an application
 	portInt, _ := strconv.Atoi(port)
+	jobType := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
+	FQFN := fqfn.Parse(jobType)
+	prettyName := jobType
 
-	runnableName := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
+	// modify configuration if we ARE running as part of an application
+	if runnable != nil && runnable.FQFN != "" {
+		jobType = runnable.FQFN
+		FQFN = fqfn.Parse(runnable.FQFN)
+
+		suffix, err := randSuffix()
+		if err != nil {
+			log.Fatal(errors.Wrap(err, "failed to randSuffix"))
+		}
+
+		prettyName = fmt.Sprintf("%s-%s", jobType, suffix)
+
+		// replace the logger with something more detailed
+		logger = vlog.Default(
+			vlog.EnvPrefix("SAT"),
+			vlog.AppMeta(app{prettyName}),
+		)
+
+		logger.Info("configuring", jobType)
+		logger.Info("joining app", FQFN.Identifier)
+	} else {
+		logger.Debug("configuring", jobType)
+	}
 
 	// finally, put it all together
 	c := &config{
 		runnableArg:     runnableArg,
-		runnableName:    runnableName,
+		jobType:         jobType,
+		prettyName:      prettyName,
 		runnable:        runnable,
+		identifier:      FQFN.Identifier,
 		capConfig:       caps,
 		port:            portInt,
-		portString:      port,
 		useStdin:        useStdin,
 		controlPlaneUrl: controlPlane,
+		logger:          logger,
 	}
 
 	return c, nil
@@ -156,6 +195,23 @@ func findRunnableDotYaml(runnableArg string) (*directive.Runnable, error) {
 	}
 
 	return runnable, nil
+}
+
+func randSuffix() (string, error) {
+	alphabet := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	suffix := ""
+
+	for i := 0; i < 6; i++ {
+		index, err := rand.Int(rand.Reader, big.NewInt(35))
+		if err != nil {
+			return "", errors.Wrap(err, "failed to rand.Int")
+		}
+
+		suffix += string(alphabet[index.Int64()])
+	}
+
+	return suffix, nil
 }
 
 func init() {

@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/pkg/errors v0.9.1
 	github.com/suborbital/atmo v0.4.3-0.20211212184639-4f84ee42de51
-	github.com/suborbital/grav v0.4.2
+	github.com/suborbital/grav v0.4.3-0.20211224045646-623c17de4d02
 	github.com/suborbital/reactr v0.12.1-0.20211214153447-ebdc67cf0ffd
 	github.com/suborbital/subo v0.1.0
 	github.com/suborbital/vektor v0.5.1
@@ -32,7 +32,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.4 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
-	github.com/schollz/peerdiscovery v1.6.9 // indirect
+	github.com/schollz/peerdiscovery v1.6.10 // indirect
 	github.com/second-state/WasmEdge-go v0.9.0-rc5 // indirect
 	github.com/sethvargo/go-envconfig v0.4.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
@@ -40,7 +40,7 @@ require (
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20211209171907-798191bca915 // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
 

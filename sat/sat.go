@@ -41,18 +41,10 @@ var headless bool = false
 
 // initSat initializes Reactr, Vektor, and Grav instances
 // if config.useStdin is true, only Reactr will be created, returning r, nil, nil
-func initSat(logger *vlog.Logger, config *config) (*sat, error) {
-	runtime.UseInternalLogger(logger)
+func initSat(config *config) (*sat, error) {
+	runtime.UseInternalLogger(config.logger)
 
-	// first configure this instance's 'identity'
-	jobName := config.runnableName
-	if config.runnable != nil && config.runnable.FQFN != "" {
-		jobName = config.runnable.FQFN
-	}
-
-	logger.Debug("registering", jobName)
-
-	exec := executor.NewWithGrav(logger, nil)
+	exec := executor.NewWithGrav(config.logger, nil)
 	exec.UseCapabilityConfig(config.capConfig)
 
 	var runner rt.Runnable
@@ -63,7 +55,7 @@ func initSat(logger *vlog.Logger, config *config) (*sat, error) {
 	}
 
 	exec.Register(
-		jobName,
+		config.jobType,
 		runner,
 		rt.Autoscale(0),
 		rt.MaxRetries(0),
@@ -72,9 +64,9 @@ func initSat(logger *vlog.Logger, config *config) (*sat, error) {
 	)
 
 	sat := &sat{
-		j: jobName,
+		j: config.jobType,
 		e: exec,
-		l: logger,
+		l: config.logger,
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
@@ -84,24 +76,28 @@ func initSat(logger *vlog.Logger, config *config) (*sat, error) {
 
 	t := websocket.New()
 
+	// configure Grav to join the mesh for its appropriate application
+	// and broadcast its capability (i.e. the loaded function)
 	g := grav.New(
-		grav.UseLogger(logger),
+		grav.UseBelongsTo(config.identifier),
+		grav.UseCapabilities(config.jobType),
+		grav.UseLogger(config.logger),
 		grav.UseTransport(t),
 		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(config.portString, "/meta/message"),
+		grav.UseEndpoint(fmt.Sprintf("%d", config.port), "/meta/message"),
 	)
 
 	// set up the Executor to listen for jobs and handle them
 	exec.UseGrav(g)
-	exec.ListenAndRun(jobName, sat.handleFnResult)
+	exec.ListenAndRun(config.jobType, sat.handleFnResult)
 
-	if err := connectStaticPeers(logger, g); err != nil {
+	if err := connectStaticPeers(config.logger, g); err != nil {
 		log.Fatal(err)
 	}
 
 	v := vk.New(
-		vk.UseLogger(logger),
-		vk.UseAppName(config.runnableName),
+		vk.UseLogger(config.logger),
+		vk.UseAppName(config.prettyName),
 		vk.UseHTTPPort(config.port),
 		vk.UseEnvPrefix("SAT"),
 	)
@@ -312,5 +308,5 @@ func (s *sat) sendNextStep(pod *grav.Pod, msg grav.Message, seq *sequence.Sequen
 	s.l.Info("sending next message", nextStep.Exec.FQFN)
 
 	nextMsg := grav.NewMsgWithParentID(nextStep.Exec.FQFN, msg.ParentID(), reqJSON)
-	pod.Send(nextMsg)
+	s.g.Tunnel(nextStep.Exec.FQFN, nextMsg)
 }

@@ -32,10 +32,10 @@ run:
 constd:
 	go build -o .bin/constd -tags netgo -ldflags="-extldflags=-static" ./constd
 
-constd/dev:
+constd/dev: constd
 	CONSTD_ATMO_VERSION=dev CONSTD_SAT_VERSION=dev .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
 
-constd/metal:
+constd/metal: constd
 	CONSTD_EXEC_MODE=metal .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
 
 .PHONY: sat constd

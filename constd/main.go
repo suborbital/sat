@@ -55,7 +55,7 @@ func startConstellation(config *config, appSource appsource.AppSource, errchan c
 	for i := range runnables {
 		runnable := runnables[i]
 
-		go func() {
+		launch := func() {
 			fmt.Printf("launching %s\n", runnable.FQFN)
 
 			for {
@@ -66,7 +66,10 @@ func startConstellation(config *config, appSource appsource.AppSource, errchan c
 
 				time.Sleep(time.Millisecond * 200)
 			}
-		}()
+		}
+
+		go launch()
+		go launch()
 	}
 }
 
