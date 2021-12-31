@@ -9,7 +9,8 @@ import (
 )
 
 // Run runs a command, outputting to terminal and returning the full output and/or error
-func Run(cmd string, env ...string) error {
+// a channel is returned which, when sent on, will terminate the process that was started
+func Run(cmd string, env ...string) (chan bool, error) {
 	// you can uncomment this below if you want to see exactly the commands being run
 	fmt.Println("▶️", cmd)
 
@@ -19,9 +20,17 @@ func Run(cmd string, env ...string) error {
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
 
-	if err := command.Run(); err != nil {
-		return errors.Wrap(err, "failed to Run")
+	if err := command.Start(); err != nil {
+		return nil, errors.Wrap(err, "failed to Run")
 	}
 
-	return nil
+	killChan := make(chan bool)
+
+	go func() {
+		<-killChan
+		command.Process.Kill()
+		command.Process.Release()
+	}()
+
+	return killChan, nil
 }

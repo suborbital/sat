@@ -5,25 +5,22 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/directive"
 )
 
-func atmoCommand(config *config) string {
+func atmoCommand(config *config, port string) string {
 	var cmd string
 
 	switch config.execMode {
 	case "docker":
 		cmd = fmt.Sprintf(
-			"docker run -p 8080:8080 -e ATMO_HTTP_PORT=8080 -e ATMO_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/atmo-proxy:%s atmo-proxy",
+			"docker run -p %s:%s -e ATMO_HTTP_PORT=%s -e ATMO_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/atmo-proxy:%s atmo-proxy",
+			port, port, port,
 			config.atmoTag,
 		)
 	case "metal":
-		os.Setenv("ATMO_HTTP_PORT", "8080")
-		os.Setenv("ATMO_CONTROL_PLANE", "localhost:9090")
-
 		cmd = "atmo-proxy"
 	default:
 		cmd = "echo 'invalid exec mode'"

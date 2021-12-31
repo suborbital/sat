@@ -30,6 +30,9 @@ run:
 # CONSTD TARGETS
 
 constd:
+	go build -o .bin/constd -tags netgo ./constd
+
+constd/static:
 	go build -o .bin/constd -tags netgo -ldflags="-extldflags=-static" ./constd
 
 constd/docker: constd

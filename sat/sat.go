@@ -30,8 +30,10 @@ const (
 type Sat struct {
 	j string // the job name / FQFN
 
+	c *Config
 	v *vk.Server
 	g *grav.Grav
+	t *websocket.Transport
 	e *executor.Executor
 	l *vlog.Logger
 }
@@ -64,8 +66,10 @@ func New(config *Config) (*Sat, error) {
 	)
 
 	sat := &Sat{
+		c: config,
 		j: config.JobType,
 		e: exec,
+		t: websocket.New(),
 		l: config.Logger,
 	}
 
@@ -74,47 +78,51 @@ func New(config *Config) (*Sat, error) {
 		return sat, nil
 	}
 
-	t := websocket.New()
+	// Grav and Vektor will be started on call to s.Start()
 
-	// configure Grav to join the mesh for its appropriate application
-	// and broadcast its capability (i.e. the loaded function)
-	g := grav.New(
-		grav.UseBelongsTo(config.Identifier),
-		grav.UseCapabilities(config.JobType),
-		grav.UseLogger(config.Logger),
-		grav.UseTransport(t),
-		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(fmt.Sprintf("%d", config.Port), "/meta/message"),
-	)
-
-	// set up the Executor to listen for jobs and handle them
-	exec.UseGrav(g)
-	exec.ListenAndRun(config.JobType, sat.handleFnResult)
-
-	if err := connectStaticPeers(config.Logger, g); err != nil {
-		log.Fatal(err)
-	}
-
-	v := vk.New(
+	sat.v = vk.New(
 		vk.UseLogger(config.Logger),
 		vk.UseAppName(config.PrettyName),
 		vk.UseHTTPPort(config.Port),
 		vk.UseEnvPrefix("SAT"),
 	)
 
-	v.HandleHTTP(http.MethodGet, "/meta/message", t.HTTPHandlerFunc())
-	v.GET("/meta/metrics", sat.metricsHandler())
-	v.POST("/*any", sat.handler(exec))
-
-	sat.v = v
-	sat.g = g
+	sat.v.HandleHTTP(http.MethodGet, "/meta/message", sat.t.HTTPHandlerFunc())
+	sat.v.GET("/meta/metrics", sat.metricsHandler())
+	sat.v.POST("/*any", sat.handler(exec))
 
 	return sat, nil
 }
 
-// Start starts Sat's Vektor server
+// Start starts Sat's Vektor server and Grav discovery
 func (s *Sat) Start() error {
-	return s.v.Start()
+	errChan := make(chan error)
+
+	// start Vektor first so that the server is started up before Grav starts discovery
+	go func() {
+		errChan <- s.v.Start()
+	}()
+
+	// configure Grav to join the mesh for its appropriate application
+	// and broadcast its capability (i.e. the loaded function)
+	s.g = grav.New(
+		grav.UseBelongsTo(s.c.Identifier),
+		grav.UseCapabilities(s.c.JobType),
+		grav.UseLogger(s.c.Logger),
+		grav.UseTransport(s.t),
+		grav.UseDiscovery(local.New()),
+		grav.UseEndpoint(fmt.Sprintf("%d", s.c.Port), "/meta/message"),
+	)
+
+	// set up the Executor to listen for jobs and handle them
+	s.e.UseGrav(s.g)
+	s.e.ListenAndRun(s.c.JobType, s.handleFnResult)
+
+	if err := connectStaticPeers(s.c.Logger, s.g); err != nil {
+		log.Fatal(err)
+	}
+
+	return <-errChan
 }
 
 // execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout
@@ -196,15 +204,11 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	ctx := vk.NewCtx(s.l, nil, nil)
 	ctx.UseRequestID(req.ID)
 
-	seq, err := sequence.FromJSON(req.SequenceJSON, s.e, ctx)
+	seq, err := sequence.FromJSON(req.SequenceJSON, req, s.e, ctx)
 	if err != nil {
 		s.l.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
 		return
 	}
-
-	// load the request into the sequence so that it can help
-	// updating state and checking error handling behaviour
-	seq.UseRequest(req)
 
 	// figure out where we are in the sequence
 	step := seq.NextStep()
