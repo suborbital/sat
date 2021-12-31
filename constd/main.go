@@ -73,7 +73,6 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 			atmoCommand(c.config, atmoPorts[0]),
 			"ATMO_HTTP_PORT="+atmoPorts[0],
 			"ATMO_CONTROL_PLANE=localhost:9090",
-			"ATMO_LOG_LEVEL=warn",
 		)
 		if err != nil {
 			errchan <- errors.Wrap(err, "failed to Run Atmo")
@@ -105,7 +104,6 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				cmd,
 				"SAT_HTTP_PORT="+port,
 				"SAT_CONTROL_PLANE=localhost:9090",
-				"SAT_LOG_LEVEL=warn",
 			)
 
 			if err != nil {
@@ -118,7 +116,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 		report := watcher.report()
 		if report == nil {
 			// if no instances exist, launch one
-			c.logger.Warn("launching %s\n", runnable.FQFN)
+			c.logger.Warn("launching", runnable.FQFN)
 
 			go launch()
 		} else if report.totalThreads/report.instCount >= runtime.NumCPU()/2 {

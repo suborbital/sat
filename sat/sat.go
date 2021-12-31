@@ -38,6 +38,10 @@ type Sat struct {
 	l *vlog.Logger
 }
 
+type loggerScope struct {
+	RequestID string `json:"request_id"`
+}
+
 var wait bool = false
 var headless bool = false
 
@@ -85,6 +89,7 @@ func New(config *Config) (*Sat, error) {
 		vk.UseAppName(config.PrettyName),
 		vk.UseHTTPPort(config.Port),
 		vk.UseEnvPrefix("SAT"),
+		vk.UseQuietRoutes("/meta/metrics"),
 	)
 
 	sat.v.HandleHTTP(http.MethodGet, "/meta/message", sat.t.HTTPHandlerFunc())
@@ -192,8 +197,6 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 // handleFnResult this is the function mounted onto exec.ListenAndRun, and receives all
 // function results received from meshed peers (i.e. Grav)
 func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) {
-	s.l.Info(msg.Type(), "finished executing")
-
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
 	if err != nil {
@@ -203,6 +206,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 
 	ctx := vk.NewCtx(s.l, nil, nil)
 	ctx.UseRequestID(req.ID)
+	ctx.UseScope(loggerScope{req.ID})
 
 	seq, err := sequence.FromJSON(req.SequenceJSON, req, s.e, ctx)
 	if err != nil {
@@ -213,7 +217,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	// figure out where we are in the sequence
 	step := seq.NextStep()
 	if step == nil {
-		s.l.Error(errors.New("got nil NextStep"))
+		ctx.Log.Error(errors.New("got nil NextStep"))
 		return
 	}
 
@@ -234,7 +238,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	} else {
 		respJSON := result.([]byte)
 		if err := json.Unmarshal(respJSON, resp); err != nil {
-			s.l.Error(errors.Wrap(err, "failed to Unmarshal response"))
+			ctx.Log.Error(errors.Wrap(err, "failed to Unmarshal response"))
 			return
 		}
 	}
@@ -258,18 +262,18 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	defer pod.Disconnect()
 
 	if err := s.sendFnResult(pod, fnr, ctx); err != nil {
-		s.l.Error(errors.Wrap(err, "failed to sendFnResult"))
+		ctx.Log.Error(errors.Wrap(err, "failed to sendFnResult"))
 		return
 	}
 
 	// determine if we ourselves should continue or halt the sequence
 	if execErr != nil {
-		s.l.ErrorString("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
+		ctx.Log.ErrorString("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
 		return
 	}
 
 	if err := seq.HandleStepErrs([]sequence.FnResult{*fnr}, step.Exec); err != nil {
-		s.l.Error(err)
+		ctx.Log.Error(err)
 		return
 	}
 
@@ -279,13 +283,13 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	// prepare for the next step in the chain to be executed
 	stepJSON, err := seq.StepsJSON()
 	if err != nil {
-		s.l.Error(errors.Wrap(err, "failed to StepsJSON"))
+		ctx.Log.Error(errors.Wrap(err, "failed to StepsJSON"))
 		return
 	}
 
 	req.SequenceJSON = stepJSON
 
-	s.sendNextStep(pod, msg, seq, req)
+	s.sendNextStep(msg, seq, req, ctx)
 }
 
 func (s *Sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx) error {
@@ -294,29 +298,34 @@ func (s *Sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx
 		return errors.Wrap(err, "failed to Marshal function result")
 	}
 
-	s.l.Info("function", s.j, "completed, sending result")
-
 	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
+
+	ctx.Log.Info("function", s.j, "completed, sending result message", respMsg.UUID(), "(", respMsg.ParentID(), ")")
+
 	pod.Send(respMsg)
 
 	return nil
 }
 
-func (s *Sat) sendNextStep(pod *grav.Pod, msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest) {
+func (s *Sat) sendNextStep(msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx *vk.Ctx) {
 	nextStep := seq.NextStep()
 	if nextStep == nil {
-		s.l.Info("sequence completed, no nextStep message to send")
+		ctx.Log.Info("sequence completed, no nextStep message to send")
 		return
 	}
 
 	reqJSON, err := json.Marshal(req)
 	if err != nil {
-		s.l.Error(errors.Wrap(err, "failed to Marshal request"))
+		ctx.Log.Error(errors.Wrap(err, "failed to Marshal request"))
 		return
 	}
 
-	s.l.Info("sending next message", nextStep.Exec.FQFN)
+	nextMsg := grav.NewMsgWithParentID(nextStep.Exec.FQFN, ctx.RequestID(), reqJSON)
 
-	nextMsg := grav.NewMsgWithParentID(nextStep.Exec.FQFN, msg.ParentID(), reqJSON)
-	s.g.Tunnel(nextStep.Exec.FQFN, nextMsg)
+	ctx.Log.Info("sending next message", nextStep.Exec.FQFN, nextMsg.UUID())
+
+	if err := s.g.Tunnel(nextStep.Exec.FQFN, nextMsg); err != nil {
+		// nothing much we can do here
+		ctx.Log.Error(errors.Wrap(err, "failed to Tunnel nextMsg"))
+	}
 }
