@@ -4,10 +4,10 @@ go 1.17
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/suborbital/atmo v0.4.3-0.20211231205436-582d7c602930
-	github.com/suborbital/grav v0.4.3-0.20211224045646-623c17de4d02
+	github.com/suborbital/atmo v0.4.3-0.20220106202436-d1cc5b031067
+	github.com/suborbital/grav v0.4.3-0.20220110025656-2d33fbcb9896
 	github.com/suborbital/reactr v0.12.1-0.20211214153447-ebdc67cf0ffd
-	github.com/suborbital/vektor v0.5.2-0.20211231205120-a1caebc62856
+	github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8
 	gopkg.in/yaml.v2 v2.4.0
 )
 

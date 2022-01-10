@@ -28,8 +28,8 @@ func Run(cmd string, env ...string) (chan bool, error) {
 
 	go func() {
 		<-killChan
-		command.Process.Kill()
-		command.Process.Release()
+		command.Process.Signal(os.Interrupt)
+		command.Process.Wait()
 	}()
 
 	return killChan, nil

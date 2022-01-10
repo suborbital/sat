@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -17,7 +19,7 @@ import (
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
-	"github.com/suborbital/reactr/rwasm/runtime"
+	wruntime "github.com/suborbital/reactr/rwasm/runtime"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -33,6 +35,7 @@ type Sat struct {
 	c *Config
 	v *vk.Server
 	g *grav.Grav
+	p *grav.Pod
 	t *websocket.Transport
 	e *executor.Executor
 	l *vlog.Logger
@@ -48,7 +51,7 @@ var headless bool = false
 // New initializes Reactr, Vektor, and Grav in a Sat instance
 // if config.UseStdin is true, only Reactr will be created
 func New(config *Config) (*Sat, error) {
-	runtime.UseInternalLogger(config.Logger)
+	wruntime.UseInternalLogger(config.Logger)
 
 	exec := executor.NewWithGrav(config.Logger, nil)
 	exec.UseCapabilityConfig(config.CapConfig)
@@ -109,15 +112,17 @@ func (s *Sat) Start() error {
 	}()
 
 	// configure Grav to join the mesh for its appropriate application
-	// and broadcast its capability (i.e. the loaded function)
+	// and broadcast its "interest" (i.e. the loaded function)
 	s.g = grav.New(
 		grav.UseBelongsTo(s.c.Identifier),
-		grav.UseCapabilities(s.c.JobType),
+		grav.UseInterests(s.c.JobType),
 		grav.UseLogger(s.c.Logger),
 		grav.UseTransport(s.t),
 		grav.UseDiscovery(local.New()),
 		grav.UseEndpoint(fmt.Sprintf("%d", s.c.Port), "/meta/message"),
 	)
+
+	s.p = s.g.Connect()
 
 	// set up the Executor to listen for jobs and handle them
 	s.e.UseGrav(s.g)
@@ -127,7 +132,16 @@ func (s *Sat) Start() error {
 		log.Fatal(err)
 	}
 
-	return <-errChan
+	s.setupSignals(errChan)
+
+	// we ignore ErrServerClosed as that is an expected error during shutdown
+	for err := range errChan {
+		if err != http.ErrServerClosed {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout
@@ -155,7 +169,7 @@ func (s *Sat) ExecFromStdin() error {
 		State:       map[string][]byte{},
 	}
 
-	result, err := s.e.Do(s.j, req, ctx)
+	result, err := s.e.Do(s.j, req, ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to exec")
 	}
@@ -178,7 +192,7 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
-		result, err := exec.Do(s.j, req, ctx)
+		result, err := exec.Do(s.j, req, ctx, nil)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to exec"))
 			return nil, vk.Wrap(http.StatusTeapot, err)
@@ -258,10 +272,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 		}(),
 	}
 
-	pod := s.g.Connect()
-	defer pod.Disconnect()
-
-	if err := s.sendFnResult(pod, fnr, ctx); err != nil {
+	if err := s.sendFnResult(fnr, ctx); err != nil {
 		ctx.Log.Error(errors.Wrap(err, "failed to sendFnResult"))
 		return
 	}
@@ -292,7 +303,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	s.sendNextStep(msg, seq, req, ctx)
 }
 
-func (s *Sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx) error {
+func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
 	fnrJSON, err := json.Marshal(result)
 	if err != nil {
 		return errors.Wrap(err, "failed to Marshal function result")
@@ -300,9 +311,11 @@ func (s *Sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx
 
 	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
 
-	ctx.Log.Info("function", s.j, "completed, sending result message", respMsg.UUID(), "(", respMsg.ParentID(), ")")
+	ctx.Log.Info("function", s.j, "completed, sending result message", respMsg.UUID())
 
-	pod.Send(respMsg)
+	if s.p.Send(respMsg) == nil {
+		return errors.New("failed to Send fnResult")
+	}
 
 	return nil
 }
@@ -310,7 +323,7 @@ func (s *Sat) sendFnResult(pod *grav.Pod, result *sequence.FnResult, ctx *vk.Ctx
 func (s *Sat) sendNextStep(msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx *vk.Ctx) {
 	nextStep := seq.NextStep()
 	if nextStep == nil {
-		ctx.Log.Info("sequence completed, no nextStep message to send")
+		ctx.Log.Debug("sequence completed, no nextStep message to send")
 		return
 	}
 
@@ -328,4 +341,22 @@ func (s *Sat) sendNextStep(msg grav.Message, seq *sequence.Sequence, req *reques
 		// nothing much we can do here
 		ctx.Log.Error(errors.Wrap(err, "failed to Tunnel nextMsg"))
 	}
+}
+
+// setupSignals sets up clean shutdown from SIGINT and SIGTERM
+func (s *Sat) setupSignals(errChan chan error) {
+	sigs := make(chan os.Signal, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigs
+		s.l.Warn("encountered signal, beginning shutdown:", sig.String())
+
+		// stopping Grav has a 3s delay (to allow the node to drain)
+		// so s.v.Stop won't return until all connections are closed after that delay
+		// this is needed to ensure safe withdrawl from a constellation
+		s.g.Withdraw()
+		errChan <- s.v.Stop()
+	}()
 }

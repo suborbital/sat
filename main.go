@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/suborbital/sat/sat"
 )
 
@@ -27,6 +29,12 @@ func main() {
 	}
 
 	if err := s.Start(); err != nil {
-		log.Fatal(err)
+		if err == http.ErrServerClosed {
+			config.Logger.Info("sat server shutdown complete")
+		} else {
+			config.Logger.Error(errors.Wrap(err, "sat error, shutting down"))
+		}
+	} else {
+		config.Logger.Info("sat clean shutdown complete")
 	}
 }

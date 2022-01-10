@@ -120,15 +120,23 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 
 			go launch()
 		} else if report.totalThreads/report.instCount >= runtime.NumCPU()/2 {
-			// if the current instances seem overwhelmed, add one
-			c.logger.Warn("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+			if report.instCount >= runtime.NumCPU() {
+				c.logger.Warn("maximum instance count reached for", runnable.Name)
+			} else {
+				// if the current instances seem overwhelmed, add one
+				c.logger.Warn("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-			go launch()
-		} else if report.totalThreads/report.instCount < 1 {
-			// if the current instances have too much spare time on their hands
-			c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+				go launch()
+			}
+		} else if report.totalThreads/report.instCount < runtime.NumCPU()/2 {
+			if report.instCount == 1 {
+				// that's fine, do nothing
+			} else {
+				// if the current instances have too much spare time on their hands
+				c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-			watcher.kill()
+				watcher.kill()
+			}
 		}
 	}
 }
