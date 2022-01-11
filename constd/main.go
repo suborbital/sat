@@ -113,13 +113,19 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 			watcher.add(port, kill)
 		}
 
+		// we want to max out at 8 threads per instance
+		threshold := runtime.NumCPU() / 2
+		if threshold > 8 {
+			threshold = 8
+		}
+
 		report := watcher.report()
 		if report == nil {
 			// if no instances exist, launch one
 			c.logger.Warn("launching", runnable.FQFN)
 
 			go launch()
-		} else if report.totalThreads/report.instCount >= runtime.NumCPU()/2 {
+		} else if report.totalThreads/report.instCount >= threshold {
 			if report.instCount >= runtime.NumCPU() {
 				c.logger.Warn("maximum instance count reached for", runnable.Name)
 			} else {
@@ -128,7 +134,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 
 				go launch()
 			}
-		} else if report.totalThreads/report.instCount < runtime.NumCPU()/2 {
+		} else if report.totalThreads/report.instCount < threshold {
 			if report.instCount == 1 {
 				// that's fine, do nothing
 			} else {
