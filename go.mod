@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/suborbital/atmo v0.4.3-0.20220106202436-d1cc5b031067
+	github.com/suborbital/atmo v0.4.3-0.20220110030321-eb0038f07d4a
 	github.com/suborbital/grav v0.4.3-0.20220110025656-2d33fbcb9896
 	github.com/suborbital/reactr v0.12.1-0.20211214153447-ebdc67cf0ffd
 	github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8

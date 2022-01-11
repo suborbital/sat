@@ -14,32 +14,10 @@ handlers:
     method: POST
     steps:
       - fn: helloworld-rs
-  
+
   - type: request
-    resource: /hello/:key
+    resource: /goodbye
     method: POST
     steps:
       - fn: helloworld-rs
-      - fn: cache-set
-      - fn: cache-get
-
-  - type: request
-    resource: /goodbye/:key
-    method: POST
-    steps:
-      - fn: helloworld-rs
-      - fn: cache-set
-      - fn: cache-get
-      - fn: return-err
-
-  - type: request
-    resource: /set/:key
-    method: POST
-    steps:
-      - fn: cache-set
-  
-  - type: request
-    resource: /get/:key
-    method: GET
-    steps:
-      - fn: cache-get
+      - fn: goodbye
