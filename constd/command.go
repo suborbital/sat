@@ -5,25 +5,22 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/directive"
 )
 
-func atmoCommand(config *config) string {
+func atmoCommand(config *config, port string) string {
 	var cmd string
 
 	switch config.execMode {
 	case "docker":
 		cmd = fmt.Sprintf(
-			"docker run -p 8080:8080 -e ATMO_HTTP_PORT=8080 -e ATMO_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/atmo-proxy:%s atmo-proxy",
+			"docker run -p %s:%s -e ATMO_HTTP_PORT=%s -e ATMO_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/atmo-proxy:%s atmo-proxy",
+			port, port, port,
 			config.atmoTag,
 		)
 	case "metal":
-		os.Setenv("ATMO_HTTP_PORT", "8080")
-		os.Setenv("ATMO_CONTROL_PLANE", "localhost:9090")
-
 		cmd = "atmo-proxy"
 	default:
 		cmd = "echo 'invalid exec mode'"
@@ -32,7 +29,8 @@ func atmoCommand(config *config) string {
 	return cmd
 }
 
-func satCommand(config *config, runnable directive.Runnable) string {
+// satCommand returns the command and the port string
+func satCommand(config *config, runnable directive.Runnable) (string, string) {
 	port, err := randPort()
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to randPort"))
@@ -43,15 +41,12 @@ func satCommand(config *config, runnable directive.Runnable) string {
 	switch config.execMode {
 	case "docker":
 		cmd = fmt.Sprintf(
-			"docker run --rm -p %s:%s -e SAT_HTTP_PORT=%s -e SAT_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge --name %s suborbital/sat:%s sat %s",
+			"docker run --rm -p %s:%s -e SAT_HTTP_PORT=%s -e SAT_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/sat:%s sat %s",
 			port, port, port,
-			runnable.Name,
 			config.satTag,
 			runnable.FQFN,
 		)
 	case "metal":
-		os.Setenv("SAT_CONTROL_PLANE", "localhost:9090")
-
 		cmd = fmt.Sprintf(
 			"sat %s",
 			runnable.FQFN,
@@ -60,7 +55,7 @@ func satCommand(config *config, runnable directive.Runnable) string {
 		cmd = "echo 'invalid exec mode'"
 	}
 
-	return cmd
+	return cmd, port
 }
 
 func randPort() (string, error) {
