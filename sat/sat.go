@@ -174,10 +174,7 @@ func (s *Sat) ExecFromStdin() error {
 		return errors.Wrap(err, "failed to exec")
 	}
 
-	resp := request.CoordinatedResponse{}
-	if err := json.Unmarshal(result.([]byte), &resp); err != nil {
-		return errors.Wrap(err, "failed to Unmarshal response")
-	}
+	resp := result.(*request.CoordinatedResponse)
 
 	fmt.Print(string(resp.Output))
 
@@ -198,11 +195,7 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 			return nil, vk.Wrap(http.StatusTeapot, err)
 		}
 
-		resp := request.CoordinatedResponse{}
-		if err := json.Unmarshal(result.([]byte), &resp); err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to Unmarshal resp"))
-			return nil, vk.E(http.StatusInternalServerError, "unknown error")
-		}
+		resp := result.(*request.CoordinatedResponse)
 
 		return resp.Output, nil
 	}
@@ -250,11 +243,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 			execErr = fnErr
 		}
 	} else {
-		respJSON := result.([]byte)
-		if err := json.Unmarshal(respJSON, resp); err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to Unmarshal response"))
-			return
-		}
+		resp = result.(*request.CoordinatedResponse)
 	}
 
 	// package everything up and shuttle it back to the parent (atmo-proxy)
