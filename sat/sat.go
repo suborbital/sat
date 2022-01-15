@@ -334,7 +334,7 @@ func (s *Sat) sendNextStep(msg grav.Message, seq *sequence.Sequence, req *reques
 
 // setupSignals sets up clean shutdown from SIGINT and SIGTERM
 func (s *Sat) setupSignals(errChan chan error) {
-	sigs := make(chan os.Signal, 1)
+	sigs := make(chan os.Signal, 64)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
