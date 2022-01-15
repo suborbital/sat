@@ -29,7 +29,7 @@ func Run(cmd string, env ...string) (chan bool, error) {
 
 	go func() {
 		<-killChan
-		command.Process.Signal(syscall.SIGINT)
+		command.Process.Signal(syscall.SIGTERM)
 		command.Process.Wait()
 	}()
 
