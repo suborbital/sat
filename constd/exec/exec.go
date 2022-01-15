@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -32,8 +33,12 @@ func Run(cmd string, env ...string) (chan bool, error) {
 
 	go func() {
 		<-killChan
+
 		command.Process.Signal(syscall.SIGTERM)
-		command.Process.Wait()
+
+		time.Sleep(time.Second * 3)
+
+		command.Process.Kill()
 	}()
 
 	return killChan, nil
