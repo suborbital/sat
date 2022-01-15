@@ -104,12 +104,15 @@ func New(config *Config) (*Sat, error) {
 
 // Start starts Sat's Vektor server and Grav discovery
 func (s *Sat) Start() error {
-	errChan := make(chan error)
-	shutdownChan := make(chan error)
-
 	// start Vektor first so that the server is started up before Grav starts discovery
 	go func() {
-		errChan <- s.v.Start()
+		if err := s.v.Start(); err != nil {
+			if err == http.ErrServerClosed {
+				// that's fine, do nothing
+			} else {
+				log.Fatal(errors.Wrap(err, "failed to Start server"))
+			}
+		}
 	}()
 
 	// configure Grav to join the mesh for its appropriate application
@@ -133,14 +136,9 @@ func (s *Sat) Start() error {
 		log.Fatal(err)
 	}
 
-	s.setupSignals(shutdownChan)
+	shutdownChan := make(chan error)
 
-	// we ignore ErrServerClosed as that is an expected error during shutdown
-	for err := range errChan {
-		if err != http.ErrServerClosed {
-			log.Fatal(errors.Wrap(err, "errChan encountered error"))
-		}
-	}
+	s.setupSignals(shutdownChan)
 
 	return <-shutdownChan
 }
