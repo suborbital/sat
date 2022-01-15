@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -15,7 +16,9 @@ func Run(cmd string, env ...string) (chan bool, error) {
 	// you can uncomment this below if you want to see exactly the commands being run
 	fmt.Println("▶️", cmd)
 
-	command := exec.Command("sh", "-c", cmd)
+	parts := strings.Split(cmd, " ")
+
+	command := exec.Command(parts[0], parts[1:]...)
 	command.Env = append(os.Environ(), env...)
 
 	command.Stdout = os.Stdout
