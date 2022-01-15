@@ -347,5 +347,7 @@ func (s *Sat) setupSignals(errChan chan error) {
 		// this is needed to ensure safe withdrawl from a constellation
 		s.g.Withdraw()
 		errChan <- s.v.Stop()
+
+		s.l.Warn("handled signal, shutdown proceeding", sig.String())
 	}()
 }
