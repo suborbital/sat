@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"syscall"
 
 	"github.com/pkg/errors"
 )
@@ -28,7 +29,7 @@ func Run(cmd string, env ...string) (chan bool, error) {
 
 	go func() {
 		<-killChan
-		command.Process.Signal(os.Interrupt)
+		command.Process.Signal(syscall.SIGINT)
 		command.Process.Wait()
 	}()
 
