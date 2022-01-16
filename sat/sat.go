@@ -342,9 +342,12 @@ func (s *Sat) setupSignals(shutdownChan chan error) {
 		s.l.Warn("encountered signal, beginning shutdown:", sig.String())
 
 		// stopping Grav has a 3s delay (to allow the node to drain)
-		// so s.v.Stop won't return until all connections are closed after that delay
+		// so s.v.Stop isn't called until all connections are ready to close (after that delay)
 		// this is needed to ensure safe withdrawl from a constellation
 		s.g.Withdraw()
+
+		s.l.Info("withdraw complete")
+
 		err := s.v.Stop()
 
 		s.l.Warn("handled signal, shutdown proceeding", sig.String())

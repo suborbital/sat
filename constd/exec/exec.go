@@ -38,7 +38,7 @@ func Run(cmd string, env ...string) (chan bool, error) {
 
 		time.Sleep(time.Second * 3)
 
-		command.Process.Kill()
+		command.Process.Wait()
 	}()
 
 	return killChan, nil
