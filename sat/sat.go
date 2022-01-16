@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -22,6 +23,7 @@ import (
 	wruntime "github.com/suborbital/reactr/rwasm/runtime"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -348,7 +350,8 @@ func (s *Sat) setupSignals(shutdownChan chan error) {
 
 		s.l.Info("withdraw complete")
 
-		err := s.v.Stop()
+		ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
+		err := s.v.StopCtx(ctx)
 
 		s.l.Warn("handled signal, shutdown proceeding", sig.String())
 

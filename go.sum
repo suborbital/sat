@@ -388,8 +388,9 @@ github.com/suborbital/reactr v0.12.1-0.20220114194921-ef48b75dbd9d/go.mod h1:j1z
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
 github.com/suborbital/vektor v0.5.1-0.20211112160641-0b7e68b46795/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
 github.com/suborbital/vektor v0.5.1/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
-github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8 h1:BCjxRFP/GKPhFkELUyFw5P/hZk4Zcb8W/OJdNcPG+uk=
 github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
+github.com/suborbital/vektor v0.5.2-0.20220116175844-e177ba8367cf h1:hgQNVrMbr9SNmynMxPW4feYXjgAELfr1fRuqFKfsOi4=
+github.com/suborbital/vektor v0.5.2-0.20220116175844-e177ba8367cf/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
 github.com/suborbital/wasmtime-go v0.31.0-subo h1:RRtQK/Japgqi6cAi3XBPmYF9laqW7hzYHN/DGQJjgAc=
 github.com/suborbital/wasmtime-go v0.31.0-subo/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
