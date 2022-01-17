@@ -66,7 +66,10 @@ func (w *watcher) kill() {
 func (w *watcher) killPort(p string) {
 	inst := w.instances[p]
 	delete(w.instances, p)
-	inst.kill <- true
+
+	if inst != nil {
+		inst.kill <- true
+	}
 }
 
 // report fetches a metrics report from each watched instance and returns a summary
