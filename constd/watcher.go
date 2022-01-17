@@ -55,6 +55,8 @@ func (w *watcher) kill() {
 	var inst *instance
 
 	for p := range w.instances {
+		w.log.Info("killing instance on port", p)
+
 		inst = w.instances[p]
 		delete(w.instances, p)
 		break
