@@ -142,6 +142,12 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				watcher.kill()
 			}
 		}
+
+		for _, p := range report.failedPorts {
+			c.logger.Warn("killing instance from failed port", p)
+
+			watcher.killPort(p)
+		}
 	}
 }
 

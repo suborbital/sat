@@ -52,16 +52,20 @@ func (w *watcher) add(port string, kill chan bool) {
 
 // kill kills a random instance from the pool
 func (w *watcher) kill() {
-	var inst *instance
-
 	for p := range w.instances {
 		w.log.Info("killing instance on port", p)
 
-		inst = w.instances[p]
-		delete(w.instances, p)
+		w.killPort(p)
+
 		break
 	}
 
+}
+
+// killPort kills the instance from the given port
+func (w *watcher) killPort(p string) {
+	inst := w.instances[p]
+	delete(w.instances, p)
 	inst.kill <- true
 }
 
@@ -86,7 +90,7 @@ func (w *watcher) report() *watcherReport {
 	}
 
 	report := &watcherReport{
-		instCount:    len(w.instances),
+		instCount:    len(w.instances) - len(failedPorts),
 		totalThreads: totalThreads,
 		failedPorts:  failedPorts,
 	}
