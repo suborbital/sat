@@ -348,8 +348,6 @@ func (s *Sat) setupSignals(shutdownChan chan error) {
 		// this is needed to ensure safe withdrawl from a constellation
 		s.g.Withdraw()
 
-		s.l.Info("withdraw complete")
-
 		ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
 		err := s.v.StopCtx(ctx)
 

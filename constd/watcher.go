@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/sat/sat"
 )
+
+var client = http.Client{Timeout: time.Second}
 
 // watcher watches a "replicaSet" of Sats for a single FQFN
 type watcher struct {
@@ -89,7 +92,7 @@ func (w *watcher) report() *watcherReport {
 func getReport(port string) (*sat.MetricsResponse, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%s/meta/metrics", port), nil)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to Do metrics request")
 	}
