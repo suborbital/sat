@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/sat/sat"
+	"github.com/suborbital/vektor/vlog"
 )
 
 var client = http.Client{Timeout: time.Second}
@@ -17,6 +18,7 @@ var client = http.Client{Timeout: time.Second}
 type watcher struct {
 	fqfn      string
 	instances map[string]*instance
+	log       *vlog.Logger
 }
 
 type instance struct {
@@ -31,10 +33,11 @@ type watcherReport struct {
 }
 
 // newWatcher creates a new watcher instance for the given fqfn
-func newWatcher(fqfn string) *watcher {
+func newWatcher(fqfn string, log *vlog.Logger) *watcher {
 	w := &watcher{
 		fqfn:      fqfn,
 		instances: map[string]*instance{},
+		log:       log,
 	}
 
 	return w
@@ -72,6 +75,7 @@ func (w *watcher) report() *watcherReport {
 	for p := range w.instances {
 		metrics, err := getReport(p)
 		if err != nil {
+			w.log.Error(errors.Wrapf(err, "failed to getReport for %s", p))
 			failedPorts = append(failedPorts, p)
 		} else {
 			w.instances[p].metrics = metrics
