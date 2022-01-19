@@ -348,7 +348,6 @@ func (s *Sat) setupSignals(shutdownChan chan error) {
 		// this is needed to ensure a safe withdraw from the constellation/mesh
 		if err := s.g.Withdraw(); err != nil {
 			s.l.Warn("encountered error during Withdraw, will proceed:", err.Error())
-			return
 		}
 
 		time.Sleep(time.Second * 3)
