@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/pkg/errors v0.9.1
 	github.com/suborbital/atmo v0.4.3-0.20220117021119-66efb5bfbbb8
-	github.com/suborbital/grav v0.4.3-0.20220117021044-04e7119310f0
+	github.com/suborbital/grav v0.4.3-0.20220119193603-d5e7706156ef
 	github.com/suborbital/reactr v0.12.1-0.20220114194921-ef48b75dbd9d
 	github.com/suborbital/vektor v0.5.2-0.20220116175844-e177ba8367cf
 	gopkg.in/yaml.v2 v2.4.0
