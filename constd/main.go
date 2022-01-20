@@ -113,8 +113,8 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 
 		// we want to max out at 8 threads per instance
 		threshold := runtime.NumCPU() / 2
-		if threshold > 8 {
-			threshold = 8
+		if threshold > 24 {
+			threshold = 24
 		}
 
 		report := watcher.report()

@@ -68,7 +68,7 @@ func New(config *Config) (*Sat, error) {
 	exec.Register(
 		config.JobType,
 		runner,
-		rt.Autoscale(16),
+		rt.Autoscale(32),
 		rt.MaxRetries(0),
 		rt.RetrySeconds(0),
 		rt.PreWarm(),
