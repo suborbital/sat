@@ -32,7 +32,7 @@ func main() {
 		if err == http.ErrServerClosed {
 			config.Logger.Info("sat server shutdown complete")
 		} else {
-			config.Logger.Error(errors.Wrap(err, "sat error, shutting down"))
+			config.Logger.Error(errors.Wrap(err, "sat error, dirty shutdown complete"))
 		}
 	} else {
 		config.Logger.Info("sat clean shutdown complete")

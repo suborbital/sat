@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -22,6 +23,7 @@ import (
 	wruntime "github.com/suborbital/reactr/rwasm/runtime"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -66,7 +68,7 @@ func New(config *Config) (*Sat, error) {
 	exec.Register(
 		config.JobType,
 		runner,
-		rt.Autoscale(0),
+		rt.Autoscale(24),
 		rt.MaxRetries(0),
 		rt.RetrySeconds(0),
 		rt.PreWarm(),
@@ -104,11 +106,15 @@ func New(config *Config) (*Sat, error) {
 
 // Start starts Sat's Vektor server and Grav discovery
 func (s *Sat) Start() error {
-	errChan := make(chan error)
-
 	// start Vektor first so that the server is started up before Grav starts discovery
 	go func() {
-		errChan <- s.v.Start()
+		if err := s.v.Start(); err != nil {
+			if err == http.ErrServerClosed {
+				// that's fine, do nothing
+			} else {
+				log.Fatal(errors.Wrap(err, "failed to Start server"))
+			}
+		}
 	}()
 
 	// configure Grav to join the mesh for its appropriate application
@@ -132,16 +138,11 @@ func (s *Sat) Start() error {
 		log.Fatal(err)
 	}
 
-	s.setupSignals(errChan)
+	shutdownChan := make(chan error)
 
-	// we ignore ErrServerClosed as that is an expected error during shutdown
-	for err := range errChan {
-		if err != http.ErrServerClosed {
-			return err
-		}
-	}
+	s.setupSignals(shutdownChan)
 
-	return nil
+	return <-shutdownChan
 }
 
 // execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout
@@ -333,8 +334,8 @@ func (s *Sat) sendNextStep(msg grav.Message, seq *sequence.Sequence, req *reques
 }
 
 // setupSignals sets up clean shutdown from SIGINT and SIGTERM
-func (s *Sat) setupSignals(errChan chan error) {
-	sigs := make(chan os.Signal, 1)
+func (s *Sat) setupSignals(shutdownChan chan error) {
+	sigs := make(chan os.Signal, 64)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -342,10 +343,24 @@ func (s *Sat) setupSignals(errChan chan error) {
 		sig := <-sigs
 		s.l.Warn("encountered signal, beginning shutdown:", sig.String())
 
-		// stopping Grav has a 3s delay (to allow the node to drain)
-		// so s.v.Stop won't return until all connections are closed after that delay
-		// this is needed to ensure safe withdrawl from a constellation
-		s.g.Withdraw()
-		errChan <- s.v.Stop()
+		// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
+		// s.v.Stop isn't called until all connections are ready to close (after said delay)
+		// this is needed to ensure a safe withdraw from the constellation/mesh
+		if err := s.g.Withdraw(); err != nil {
+			s.l.Warn("encountered error during Withdraw, will proceed:", err.Error())
+		}
+
+		time.Sleep(time.Second * 3)
+
+		if err := s.g.Stop(); err != nil {
+			s.l.Warn("encountered error during Stop, will proceed:", err.Error())
+		}
+
+		ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
+		err := s.v.StopCtx(ctx)
+
+		s.l.Warn("handled signal, shutdown proceeding", sig.String())
+
+		shutdownChan <- err
 	}()
 }

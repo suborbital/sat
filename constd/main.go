@@ -42,7 +42,7 @@ func main() {
 	c := &constd{
 		logger: l,
 		config: config,
-		atmo:   newWatcher("atmo"),
+		atmo:   newWatcher("atmo", l),
 		sats:   map[string]*watcher{},
 	}
 
@@ -79,8 +79,6 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 		}
 
 		c.atmo.add(atmoPorts[0], kill)
-	} else {
-
 	}
 }
 
@@ -91,7 +89,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 		runnable := runnables[i]
 
 		if _, exists := c.sats[runnable.FQFN]; !exists {
-			c.sats[runnable.FQFN] = newWatcher(runnable.FQFN)
+			c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
 		}
 
 		watcher := c.sats[runnable.FQFN]
@@ -142,6 +140,14 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
 				watcher.kill()
+			}
+		}
+
+		if report != nil {
+			for _, p := range report.failedPorts {
+				c.logger.Warn("killing instance from failed port", p)
+
+				watcher.killPort(p)
 			}
 		}
 	}

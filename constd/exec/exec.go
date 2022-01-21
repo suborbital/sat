@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -14,7 +17,9 @@ func Run(cmd string, env ...string) (chan bool, error) {
 	// you can uncomment this below if you want to see exactly the commands being run
 	fmt.Println("▶️", cmd)
 
-	command := exec.Command("sh", "-c", cmd)
+	parts := strings.Split(cmd, " ")
+
+	command := exec.Command(parts[0], parts[1:]...)
 	command.Env = append(os.Environ(), env...)
 
 	command.Stdout = os.Stdout
@@ -28,7 +33,11 @@ func Run(cmd string, env ...string) (chan bool, error) {
 
 	go func() {
 		<-killChan
-		command.Process.Signal(os.Interrupt)
+
+		command.Process.Signal(syscall.SIGTERM)
+
+		time.Sleep(time.Second * 3)
+
 		command.Process.Wait()
 	}()
 

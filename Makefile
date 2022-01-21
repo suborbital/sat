@@ -30,10 +30,10 @@ run:
 # CONSTD TARGETS
 
 constd:
-	go build -o .bin/constd -tags netgo ./constd
+	go build -o .bin/constd -tags wasmtime,netgo ./constd
 
 constd/static:
-	go build -o .bin/constd -tags netgo -ldflags="-extldflags=-static" ./constd
+	go build -o .bin/constd -tags wasmtime,netgo -ldflags="-extldflags=-static" ./constd
 
 constd/docker: constd
 	CONSTD_ATMO_VERSION=dev CONSTD_SAT_VERSION=dev .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip

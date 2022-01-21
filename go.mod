@@ -4,10 +4,11 @@ go 1.17
 
 require (
 	github.com/pkg/errors v0.9.1
-	github.com/suborbital/atmo v0.4.3-0.20220114204641-53f47e1fc800
-	github.com/suborbital/grav v0.4.3-0.20220110025656-2d33fbcb9896
-	github.com/suborbital/reactr v0.12.1-0.20220114194921-ef48b75dbd9d
-	github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8
+	github.com/suborbital/atmo v0.4.3-0.20220117021119-66efb5bfbbb8
+	github.com/suborbital/grav v0.4.3-0.20220119193603-d5e7706156ef
+	github.com/suborbital/reactr v0.14.0
+	github.com/suborbital/vektor v0.5.2-0.20220116175844-e177ba8367cf
+	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -37,7 +38,6 @@ require (
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
 	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/text v0.3.7 // indirect
