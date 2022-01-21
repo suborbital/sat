@@ -24,6 +24,10 @@ import (
 
 var useStdin bool
 
+func init() {
+	flag.BoolVar(&useStdin, "stdin", false, "read stdin as input, return output to stdout and then terminate")
+}
+
 type Config struct {
 	RunnableArg     string
 	JobType         string
@@ -45,15 +49,19 @@ func ConfigFromArgs() (*Config, error) {
 	flag.Parse()
 	args := flag.Args()
 
-	logger := vlog.Default(
-		vlog.EnvPrefix("SAT"),
-	)
-
 	if len(args) < 1 {
 		return nil, errors.New("missing argument: runnable (path, URL or FQFN)")
 	}
 
 	runnableArg := args[0]
+
+	return ConfigFromRunnableArg(runnableArg)
+}
+
+func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
+	logger := vlog.Default(
+		vlog.EnvPrefix("SAT"),
+	)
 
 	var runnable *directive.Runnable
 
@@ -212,8 +220,4 @@ func randSuffix() (string, error) {
 	}
 
 	return suffix, nil
-}
-
-func init() {
-	flag.BoolVar(&useStdin, "stdin", false, "read stdin as input, return output to stdout and then terminate")
 }

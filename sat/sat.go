@@ -135,3 +135,8 @@ func (s *Sat) Start() error {
 
 	return <-shutdownChan
 }
+
+// testStart returns Sat's internal server for testing purposes
+func (s *Sat) testServer() *vk.Server {
+	return s.v
+}
