@@ -11,8 +11,9 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-// handleFnResult this is the function mounted onto exec.ListenAndRun, and receives all
-// function results received from meshed peers (i.e. Grav)
+// handleFnResult is mounted onto exec.ListenAndRun...
+// when a meshed peer sends us a job, it is executed by Reactr and then
+// the result is passed into this function for handling
 func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) {
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
