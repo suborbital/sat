@@ -27,8 +27,12 @@ jobs:
         go get -v -t -d ./...
         go mod vendor
       
-    - name: Run test
+    - name: Run stdin test
       run: |
         make sat
         make constd
         echo "world" | .bin/sat --stdin ./examples/hello-echo/hello-echo.wasm
+    
+    - name: Run Go tests
+      run: |
+        go test -v ./...
