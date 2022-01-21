@@ -1,29 +1,20 @@
 package sat
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
-	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 	wruntime "github.com/suborbital/reactr/rwasm/runtime"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -143,224 +134,4 @@ func (s *Sat) Start() error {
 	s.setupSignals(shutdownChan)
 
 	return <-shutdownChan
-}
-
-// execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout
-func (s *Sat) ExecFromStdin() error {
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-
-	if err := scanner.Err(); err != nil {
-		return errors.Wrap(err, "failed to scanner.Scan")
-	}
-
-	input := scanner.Bytes()
-
-	ctx := vk.NewCtx(s.l, nil, nil)
-
-	// construct a fake HTTP request from the input
-	req := &request.CoordinatedRequest{
-		Method:      http.MethodPost,
-		URL:         "/",
-		ID:          ctx.RequestID(),
-		Body:        input,
-		Headers:     map[string]string{},
-		RespHeaders: map[string]string{},
-		Params:      map[string]string{},
-		State:       map[string][]byte{},
-	}
-
-	result, err := s.e.Do(s.j, req, ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to exec")
-	}
-
-	resp := result.(*request.CoordinatedResponse)
-
-	fmt.Print(string(resp.Output))
-
-	return nil
-}
-
-func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
-	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		req, err := request.FromVKRequest(r, ctx)
-		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to FromVKRequest"))
-			return nil, vk.E(http.StatusInternalServerError, "unknown error")
-		}
-
-		result, err := exec.Do(s.j, req, ctx, nil)
-		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to exec"))
-			return nil, vk.Wrap(http.StatusTeapot, err)
-		}
-
-		resp := result.(*request.CoordinatedResponse)
-
-		return resp.Output, nil
-	}
-}
-
-// handleFnResult this is the function mounted onto exec.ListenAndRun, and receives all
-// function results received from meshed peers (i.e. Grav)
-func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) {
-	// first unmarshal the request and sequence information
-	req, err := request.FromJSON(msg.Data())
-	if err != nil {
-		s.l.Error(errors.Wrap(err, "failed to request.FromJSON"))
-		return
-	}
-
-	ctx := vk.NewCtx(s.l, nil, nil)
-	ctx.UseRequestID(req.ID)
-	ctx.UseScope(loggerScope{req.ID})
-
-	seq, err := sequence.FromJSON(req.SequenceJSON, req, s.e, ctx)
-	if err != nil {
-		s.l.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
-		return
-	}
-
-	// figure out where we are in the sequence
-	step := seq.NextStep()
-	if step == nil {
-		ctx.Log.Error(errors.New("got nil NextStep"))
-		return
-	}
-
-	step.Completed = true
-
-	// start evaluating the result of the function call
-	resp := &request.CoordinatedResponse{}
-	var runErr rt.RunErr
-	var execErr error
-
-	if fnErr != nil {
-		if fnRunErr, isRunErr := fnErr.(rt.RunErr); isRunErr {
-			// great, it's a runErr
-			runErr = fnRunErr
-		} else {
-			execErr = fnErr
-		}
-	} else {
-		resp = result.(*request.CoordinatedResponse)
-	}
-
-	// package everything up and shuttle it back to the parent (atmo-proxy)
-	fnr := &sequence.FnResult{
-		FQFN:     msg.Type(),
-		Key:      step.Exec.CallableFn.Key(), // to support groups, we'll need to find the correct CallableFn in the list
-		Response: resp,
-		RunErr:   runErr,
-		ExecErr: func() string {
-			if execErr != nil {
-				return execErr.Error()
-			}
-
-			return ""
-		}(),
-	}
-
-	if err := s.sendFnResult(fnr, ctx); err != nil {
-		ctx.Log.Error(errors.Wrap(err, "failed to sendFnResult"))
-		return
-	}
-
-	// determine if we ourselves should continue or halt the sequence
-	if execErr != nil {
-		ctx.Log.ErrorString("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
-		return
-	}
-
-	if err := seq.HandleStepErrs([]sequence.FnResult{*fnr}, step.Exec); err != nil {
-		ctx.Log.Error(err)
-		return
-	}
-
-	// load the results into the request state
-	seq.HandleStepResults([]sequence.FnResult{*fnr})
-
-	// prepare for the next step in the chain to be executed
-	stepJSON, err := seq.StepsJSON()
-	if err != nil {
-		ctx.Log.Error(errors.Wrap(err, "failed to StepsJSON"))
-		return
-	}
-
-	req.SequenceJSON = stepJSON
-
-	s.sendNextStep(msg, seq, req, ctx)
-}
-
-func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
-	fnrJSON, err := json.Marshal(result)
-	if err != nil {
-		return errors.Wrap(err, "failed to Marshal function result")
-	}
-
-	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
-
-	ctx.Log.Info("function", s.j, "completed, sending result message", respMsg.UUID())
-
-	if s.p.Send(respMsg) == nil {
-		return errors.New("failed to Send fnResult")
-	}
-
-	return nil
-}
-
-func (s *Sat) sendNextStep(msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx *vk.Ctx) {
-	nextStep := seq.NextStep()
-	if nextStep == nil {
-		ctx.Log.Debug("sequence completed, no nextStep message to send")
-		return
-	}
-
-	reqJSON, err := json.Marshal(req)
-	if err != nil {
-		ctx.Log.Error(errors.Wrap(err, "failed to Marshal request"))
-		return
-	}
-
-	nextMsg := grav.NewMsgWithParentID(nextStep.Exec.FQFN, ctx.RequestID(), reqJSON)
-
-	ctx.Log.Info("sending next message", nextStep.Exec.FQFN, nextMsg.UUID())
-
-	if err := s.g.Tunnel(nextStep.Exec.FQFN, nextMsg); err != nil {
-		// nothing much we can do here
-		ctx.Log.Error(errors.Wrap(err, "failed to Tunnel nextMsg"))
-	}
-}
-
-// setupSignals sets up clean shutdown from SIGINT and SIGTERM
-func (s *Sat) setupSignals(shutdownChan chan error) {
-	sigs := make(chan os.Signal, 64)
-
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		sig := <-sigs
-		s.l.Warn("encountered signal, beginning shutdown:", sig.String())
-
-		// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
-		// s.v.Stop isn't called until all connections are ready to close (after said delay)
-		// this is needed to ensure a safe withdraw from the constellation/mesh
-		if err := s.g.Withdraw(); err != nil {
-			s.l.Warn("encountered error during Withdraw, will proceed:", err.Error())
-		}
-
-		time.Sleep(time.Second * 3)
-
-		if err := s.g.Stop(); err != nil {
-			s.l.Warn("encountered error during Stop, will proceed:", err.Error())
-		}
-
-		ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
-		err := s.v.StopCtx(ctx)
-
-		s.l.Warn("handled signal, shutdown proceeding", sig.String())
-
-		shutdownChan <- err
-	}()
 }
