@@ -13,6 +13,7 @@ import (
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 	wruntime "github.com/suborbital/reactr/rwasm/runtime"
+	"github.com/suborbital/sat/sat/process"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -126,7 +127,13 @@ func (s *Sat) Start() error {
 	s.e.ListenAndRun(s.c.JobType, s.handleFnResult)
 
 	if err := connectStaticPeers(s.c.Logger, s.g); err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrap(err, "failed to connectStaticPeers"))
+	}
+
+	// write a file to disk which describes this instance
+	info := process.NewInfo(s.c.Port, s.c.JobType)
+	if err := info.Write(s.c.ProcUUID); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to Write process info"))
 	}
 
 	shutdownChan := make(chan error)

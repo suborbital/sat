@@ -12,7 +12,10 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-var atmoPorts = []string{"8080", "8081", "8082"}
+const (
+	atmoPort            = "8080"
+	defaultControlPlane = "localhost:9090"
+)
 
 type constd struct {
 	logger *vlog.Logger
@@ -22,11 +25,11 @@ type constd struct {
 }
 
 type config struct {
-	bundlePath string
-	execMode   string
-	satTag     string
-	atmoTag    string
-	atmoCount  int
+	bundlePath   string
+	execMode     string
+	satTag       string
+	atmoTag      string
+	controlPlane string
 }
 
 func main() {
@@ -70,15 +73,16 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 		c.logger.Info("launching atmo")
 
 		kill, err := exec.Run(
-			atmoCommand(c.config, atmoPorts[0]),
-			"ATMO_HTTP_PORT="+atmoPorts[0],
-			"ATMO_CONTROL_PLANE=localhost:9090",
+			atmoCommand(c.config, atmoPort),
+			"ATMO_HTTP_PORT="+atmoPort,
+			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
 		)
+
 		if err != nil {
 			errchan <- errors.Wrap(err, "failed to Run Atmo")
 		}
 
-		c.atmo.add(atmoPorts[0], kill)
+		c.atmo.add(atmoPort, kill)
 	}
 }
 
@@ -101,7 +105,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 			kill, err := exec.Run(
 				cmd,
 				"SAT_HTTP_PORT="+port,
-				"SAT_CONTROL_PLANE=localhost:9090",
+				"SAT_CONTROL_PLANE="+c.config.controlPlane,
 			)
 
 			if err != nil {
@@ -175,11 +179,17 @@ func loadConfig() (*config, error) {
 		execMode = mode
 	}
 
+	controlPlane := defaultControlPlane
+	if cp, eExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); eExists {
+		controlPlane = cp
+	}
+
 	c := &config{
-		bundlePath: bundlePath,
-		execMode:   execMode,
-		satTag:     satVersion,
-		atmoTag:    atmoVersion,
+		bundlePath:   bundlePath,
+		execMode:     execMode,
+		satTag:       satVersion,
+		atmoTag:      atmoVersion,
+		controlPlane: controlPlane,
 	}
 
 	return c, nil
