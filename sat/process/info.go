@@ -86,7 +86,7 @@ func (p *Info) Write(uuid string) error {
 
 	filePath := filepath.Join(dir, fmt.Sprintf("%s.json", uuid))
 
-	if err := os.WriteFile(filePath, processJSON, 0600); err != nil {
+	if err := os.WriteFile(filePath, processJSON, 0755); err != nil {
 		return errors.Wrap(err, "failed to WriteFile")
 	}
 
@@ -95,14 +95,14 @@ func (p *Info) Write(uuid string) error {
 
 // processInfoDir returns the directory that Info files should be written to
 func processInfoDir() (string, error) {
-	home, err := os.UserHomeDir()
+	config, err := os.UserConfigDir()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to UserHomeDir")
+		return "", errors.Wrap(err, "failed to UserConfigDir")
 	}
 
-	dir := filepath.Join(home, ".sat", "proc")
+	dir := filepath.Join(config, "suborbital", "proc")
 
-	if err := os.MkdirAll(dir, 0600); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", errors.Wrap(err, "failed to MkdirAll")
 	}
 

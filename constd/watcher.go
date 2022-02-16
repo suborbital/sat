@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/sat/sat"
+	"github.com/suborbital/sat/sat/process"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -23,7 +24,7 @@ type watcher struct {
 
 type instance struct {
 	metrics *sat.MetricsResponse
-	kill    chan bool
+	uuid    string
 }
 
 type watcherReport struct {
@@ -44,32 +45,37 @@ func newWatcher(fqfn string, log *vlog.Logger) *watcher {
 }
 
 // add adds a new instance to the watched pool
-func (w *watcher) add(port string, kill chan bool) {
+func (w *watcher) add(port, uuid string) {
 	w.instances[port] = &instance{
-		kill: kill,
+		uuid: uuid,
 	}
 }
 
 // kill kills a random instance from the pool
-func (w *watcher) kill() {
+func (w *watcher) kill() error {
+	// we use the range to get a semi-random instance
+	// and then immediately return so that we only kill one
 	for p := range w.instances {
 		w.log.Info("killing instance on port", p)
 
-		w.killPort(p)
-
-		break
+		return w.killPort(p)
 	}
 
+	return nil
 }
 
 // killPort kills the instance from the given port
-func (w *watcher) killPort(p string) {
+func (w *watcher) killPort(p string) error {
 	inst := w.instances[p]
 	delete(w.instances, p)
 
 	if inst != nil {
-		inst.kill <- true
+		if err := process.Delete(inst.uuid); err != nil {
+			return errors.Wrap(err, "failed to process.Delete")
+		}
 	}
+
+	return nil
 }
 
 // report fetches a metrics report from each watched instance and returns a summary

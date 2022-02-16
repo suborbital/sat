@@ -102,7 +102,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 			cmd, port := satCommand(c.config, runnable)
 
 			// repeat forever in case the command does error out
-			kill, err := exec.Run(
+			uuid, err := exec.Run(
 				cmd,
 				"SAT_HTTP_PORT="+port,
 				"SAT_CONTROL_PLANE="+c.config.controlPlane,
@@ -112,7 +112,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				errchan <- errors.Wrap(err, "sat exited with error")
 			}
 
-			watcher.add(port, kill)
+			watcher.add(port, uuid)
 		}
 
 		// we want to max out at 8 threads per instance
@@ -127,7 +127,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 			c.logger.Warn("launching", runnable.FQFN)
 
 			go launch()
-		} else if report.totalThreads/report.instCount >= threshold {
+		} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
 			if report.instCount >= runtime.NumCPU() {
 				c.logger.Warn("maximum instance count reached for", runnable.Name)
 			} else {
@@ -136,7 +136,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 
 				go launch()
 			}
-		} else if report.totalThreads/report.instCount < threshold {
+		} else if report.instCount > 0 && report.totalThreads/report.instCount < threshold {
 			if report.instCount == 1 {
 				// that's fine, do nothing
 			} else {
