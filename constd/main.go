@@ -72,7 +72,7 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 	if report == nil {
 		c.logger.Info("launching atmo")
 
-		kill, err := exec.Run(
+		uuid, pid, err := exec.Run(
 			atmoCommand(c.config, atmoPort),
 			"ATMO_HTTP_PORT="+atmoPort,
 			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
@@ -82,7 +82,7 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 			errchan <- errors.Wrap(err, "failed to Run Atmo")
 		}
 
-		c.atmo.add(atmoPort, kill)
+		c.atmo.add(atmoPort, uuid, pid)
 	}
 }
 
@@ -102,7 +102,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 			cmd, port := satCommand(c.config, runnable)
 
 			// repeat forever in case the command does error out
-			uuid, err := exec.Run(
+			uuid, pid, err := exec.Run(
 				cmd,
 				"SAT_HTTP_PORT="+port,
 				"SAT_CONTROL_PLANE="+c.config.controlPlane,
@@ -112,7 +112,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				errchan <- errors.Wrap(err, "sat exited with error")
 			}
 
-			watcher.add(port, uuid)
+			watcher.add(port, uuid, pid)
 		}
 
 		// we want to max out at 8 threads per instance
@@ -143,7 +143,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				// if the current instances have too much spare time on their hands
 				c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-				watcher.kill()
+				watcher.terminate()
 			}
 		}
 
@@ -151,7 +151,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 			for _, p := range report.failedPorts {
 				c.logger.Warn("killing instance from failed port", p)
 
-				watcher.killPort(p)
+				watcher.terminateInstance(p)
 			}
 		}
 	}

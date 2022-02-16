@@ -14,7 +14,7 @@ import (
 
 // Run runs a command, outputting to terminal and returning the full output and/or error
 // a channel is returned which, when sent on, will terminate the process that was started
-func Run(cmd string, env ...string) (string, error) {
+func Run(cmd string, env ...string) (string, int, error) {
 	// you can uncomment this below if you want to see exactly the commands being run
 	fmt.Println("▶️", cmd)
 
@@ -29,7 +29,7 @@ func Run(cmd string, env ...string) (string, error) {
 
 	logPath, err := logfilePath(procUUID)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to logFilePath")
+		return "", 0, errors.Wrap(err, "failed to logFilePath")
 	}
 
 	logEnv := fmt.Sprintf("%s_LOG_FILE=%s", strings.ToUpper(parts[0]), logPath)
@@ -40,7 +40,7 @@ func Run(cmd string, env ...string) (string, error) {
 
 	binPath, err := exec.LookPath(parts[0])
 	if err != nil {
-		return "", errors.Wrap(err, "failed to LookPath")
+		return "", 0, errors.Wrap(err, "failed to LookPath")
 	}
 
 	info := &syscall.ProcAttr{
@@ -48,11 +48,12 @@ func Run(cmd string, env ...string) (string, error) {
 		Files: []uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()},
 	}
 
-	if _, err := syscall.ForkExec(binPath, parts, info); err != nil {
-		return "", errors.Wrap(err, "failed to ForkExec")
+	pid, err := syscall.ForkExec(binPath, parts, info)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to ForkExec")
 	}
 
-	return procUUID, nil
+	return procUUID, pid, nil
 }
 
 // logfilePath returns the directory that Info files should be written to

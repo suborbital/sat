@@ -25,6 +25,7 @@ type watcher struct {
 type instance struct {
 	metrics *sat.MetricsResponse
 	uuid    string
+	pid     int
 }
 
 type watcherReport struct {
@@ -45,27 +46,28 @@ func newWatcher(fqfn string, log *vlog.Logger) *watcher {
 }
 
 // add adds a new instance to the watched pool
-func (w *watcher) add(port, uuid string) {
+func (w *watcher) add(port, uuid string, pid int) {
 	w.instances[port] = &instance{
 		uuid: uuid,
+		pid:  pid,
 	}
 }
 
-// kill kills a random instance from the pool
-func (w *watcher) kill() error {
+// terminate terminates a random instance from the pool
+func (w *watcher) terminate() error {
 	// we use the range to get a semi-random instance
-	// and then immediately return so that we only kill one
+	// and then immediately return so that we only terminate one
 	for p := range w.instances {
-		w.log.Info("killing instance on port", p)
+		w.log.Info("terminating instance on port", p)
 
-		return w.killPort(p)
+		return w.terminateInstance(p)
 	}
 
 	return nil
 }
 
-// killPort kills the instance from the given port
-func (w *watcher) killPort(p string) error {
+// terminateInstance terminates the instance from the given port
+func (w *watcher) terminateInstance(p string) error {
 	inst := w.instances[p]
 	delete(w.instances, p)
 
