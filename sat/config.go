@@ -38,6 +38,7 @@ type Config struct {
 	Port            int
 	UseStdin        bool
 	ControlPlaneUrl string
+	EnvToken        string
 	Logger          *vlog.Logger
 	ProcUUID        string
 }
@@ -87,6 +88,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		caps = rendered
 	}
 
+	envToken := os.Getenv("SAT_ENV_TOKEN")
+
 	// next, handle the runnable arg being a URL, an FQFN, or a path on disk
 	if isURL(runnableArg) {
 		logger.Debug("fetching module from URL")
@@ -100,7 +103,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		if useControlPlane {
 			logger.Debug("fetching module from control plane")
 
-			cpRunnable, err := appClient.FindRunnable(runnableArg, "")
+			cpRunnable, err := appClient.FindRunnable(runnableArg, envToken)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to FindRunnable")
 			}

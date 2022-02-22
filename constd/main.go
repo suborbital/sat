@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/sat/constd/exec"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -30,6 +31,7 @@ type config struct {
 	satTag       string
 	atmoTag      string
 	controlPlane string
+	envToken     string
 }
 
 func main() {
@@ -49,7 +51,22 @@ func main() {
 		sats:   map[string]*watcher{},
 	}
 
-	appSource, errchan := startAppSourceServer(config.bundlePath)
+	var appSource appsource.AppSource
+	var errchan chan error
+
+	// if an external control plane hasn't been set, act as the control plane
+	// but if one has been set, use it (and launch all children with it configured)
+	if c.config.controlPlane == defaultControlPlane {
+		appSource, errchan = startAppSourceServer(config.bundlePath)
+	} else {
+		appSource = appsource.NewHTTPSource(c.config.controlPlane)
+
+		if err := appSource.Start(*options.NewWithModifiers()); err != nil {
+			log.Fatal(errors.Wrap(err, "failed to appSource.Start"))
+		}
+
+		errchan = make(chan error)
+	}
 
 	// main event loop
 	go func() {
@@ -106,6 +123,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				cmd,
 				"SAT_HTTP_PORT="+port,
 				"SAT_CONTROL_PLANE="+c.config.controlPlane,
+				"SAT_ENV_TOKEN="+c.config.envToken,
 			)
 
 			if err != nil {
@@ -184,12 +202,18 @@ func loadConfig() (*config, error) {
 		controlPlane = cp
 	}
 
+	envToken := ""
+	if et, eExists := os.LookupEnv("CONSTD_ENV_TOKEN"); eExists {
+		envToken = et
+	}
+
 	c := &config{
 		bundlePath:   bundlePath,
 		execMode:     execMode,
 		satTag:       satVersion,
 		atmoTag:      atmoVersion,
 		controlPlane: controlPlane,
+		envToken:     envToken,
 	}
 
 	return c, nil
