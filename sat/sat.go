@@ -47,7 +47,6 @@ func New(config *Config) (*Sat, error) {
 	wruntime.UseInternalLogger(config.Logger)
 
 	exec := executor.NewWithGrav(config.Logger, nil)
-	exec.UseCapabilityConfig(config.CapConfig)
 
 	var runner rt.Runnable
 	if config.Runnable != nil && len(config.Runnable.ModuleRef.Data) > 0 {
@@ -59,6 +58,7 @@ func New(config *Config) (*Sat, error) {
 	exec.Register(
 		config.JobType,
 		runner,
+		&config.CapConfig,
 		rt.Autoscale(24),
 		rt.MaxRetries(0),
 		rt.RetrySeconds(0),

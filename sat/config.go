@@ -77,13 +77,6 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		if err := appClient.Start(opts); err != nil {
 			return nil, errors.Wrap(err, "failed to appSource.Start")
 		}
-
-		rendered, err := capabilities.Render(caps, appClient, logger)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to capabilities.Render")
-		}
-
-		caps = rendered
 	}
 
 	// next, handle the runnable arg being a URL, an FQFN, or a path on disk
@@ -105,6 +98,13 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 			}
 
 			runnable = cpRunnable
+
+			rendered, err := capabilities.ResolveFromSource(appClient, FQFN.Identifier, FQFN.Namespace, FQFN.Version, logger)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to capabilities.Render")
+			}
+
+			caps = rendered
 		}
 	} else {
 		diskRunnable, err := findRunnableDotYaml(runnableArg)

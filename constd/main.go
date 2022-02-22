@@ -83,71 +83,75 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 }
 
 func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan chan error) {
-	runnables := appSource.Runnables()
+	apps := appSource.Applications()
 
-	for i := range runnables {
-		runnable := runnables[i]
+	for _, app := range apps {
+		runnables := appSource.Runnables(app.Identifier, app.AppVersion)
 
-		if _, exists := c.sats[runnable.FQFN]; !exists {
-			c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
-		}
+		for i := range runnables {
+			runnable := runnables[i]
 
-		watcher := c.sats[runnable.FQFN]
-
-		launch := func() {
-			cmd, port := satCommand(c.config, runnable)
-
-			// repeat forever in case the command does error out
-			kill, err := exec.Run(
-				cmd,
-				"SAT_HTTP_PORT="+port,
-				"SAT_CONTROL_PLANE=localhost:9090",
-			)
-
-			if err != nil {
-				errchan <- errors.Wrap(err, "sat exited with error")
+			if _, exists := c.sats[runnable.FQFN]; !exists {
+				c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
 			}
 
-			watcher.add(port, kill)
-		}
+			watcher := c.sats[runnable.FQFN]
 
-		// we want to max out at 8 threads per instance
-		threshold := runtime.NumCPU() / 2
-		if threshold > 8 {
-			threshold = 8
-		}
+			launch := func() {
+				cmd, port := satCommand(c.config, runnable)
 
-		report := watcher.report()
-		if report == nil {
-			// if no instances exist, launch one
-			c.logger.Warn("launching", runnable.FQFN)
+				// repeat forever in case the command does error out
+				kill, err := exec.Run(
+					cmd,
+					"SAT_HTTP_PORT="+port,
+					"SAT_CONTROL_PLANE=localhost:9090",
+				)
 
-			go launch()
-		} else if report.totalThreads/report.instCount >= threshold {
-			if report.instCount >= runtime.NumCPU() {
-				c.logger.Warn("maximum instance count reached for", runnable.Name)
-			} else {
-				// if the current instances seem overwhelmed, add one
-				c.logger.Warn("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+				if err != nil {
+					errchan <- errors.Wrap(err, "sat exited with error")
+				}
+
+				watcher.add(port, kill)
+			}
+
+			// we want to max out at 8 threads per instance
+			threshold := runtime.NumCPU() / 2
+			if threshold > 8 {
+				threshold = 8
+			}
+
+			report := watcher.report()
+			if report == nil {
+				// if no instances exist, launch one
+				c.logger.Warn("launching", runnable.FQFN)
 
 				go launch()
+			} else if report.totalThreads/report.instCount >= threshold {
+				if report.instCount >= runtime.NumCPU() {
+					c.logger.Warn("maximum instance count reached for", runnable.Name)
+				} else {
+					// if the current instances seem overwhelmed, add one
+					c.logger.Warn("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+
+					go launch()
+				}
+			} else if report.totalThreads/report.instCount < threshold {
+				if report.instCount == 1 {
+					// that's fine, do nothing
+				} else {
+					// if the current instances have too much spare time on their hands
+					c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+
+					watcher.kill()
+				}
 			}
-		} else if report.totalThreads/report.instCount < threshold {
-			if report.instCount == 1 {
-				// that's fine, do nothing
-			} else {
-				// if the current instances have too much spare time on their hands
-				c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-				watcher.kill()
-			}
-		}
+			if report != nil {
+				for _, p := range report.failedPorts {
+					c.logger.Warn("killing instance from failed port", p)
 
-		if report != nil {
-			for _, p := range report.failedPorts {
-				c.logger.Warn("killing instance from failed port", p)
-
-				watcher.killPort(p)
+					watcher.killPort(p)
+				}
 			}
 		}
 	}
