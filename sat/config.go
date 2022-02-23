@@ -143,6 +143,10 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	procUUID, ok := os.LookupEnv("SAT_UUID")
 	if !ok {
 		procUUID = uuid.New().String()
+	} else {
+		if _, err := uuid.Parse(procUUID); err != nil {
+			return nil, errors.Wrap(err, "SAT_UUID is set, but is not valid UUID")
+		}
 	}
 
 	// set some defaults in the case we're not running in an application
