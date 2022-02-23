@@ -8,11 +8,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/sat/constd/exec"
 	"github.com/suborbital/vektor/vlog"
 )
 
-var atmoPorts = []string{"8080", "8081", "8082"}
+const (
+	atmoPort            = "8080"
+	defaultControlPlane = "localhost:9090"
+)
 
 type constd struct {
 	logger *vlog.Logger
@@ -22,11 +26,12 @@ type constd struct {
 }
 
 type config struct {
-	bundlePath string
-	execMode   string
-	satTag     string
-	atmoTag    string
-	atmoCount  int
+	bundlePath   string
+	execMode     string
+	satTag       string
+	atmoTag      string
+	controlPlane string
+	envToken     string
 }
 
 func main() {
@@ -46,7 +51,22 @@ func main() {
 		sats:   map[string]*watcher{},
 	}
 
-	appSource, errchan := startAppSourceServer(config.bundlePath)
+	var appSource appsource.AppSource
+	var errchan chan error
+
+	// if an external control plane hasn't been set, act as the control plane
+	// but if one has been set, use it (and launch all children with it configured)
+	if c.config.controlPlane == defaultControlPlane {
+		appSource, errchan = startAppSourceServer(config.bundlePath)
+	} else {
+		appSource = appsource.NewHTTPSource(c.config.controlPlane)
+
+		if err := appSource.Start(*options.NewWithModifiers()); err != nil {
+			log.Fatal(errors.Wrap(err, "failed to appSource.Start"))
+		}
+
+		errchan = make(chan error)
+	}
 
 	// main event loop
 	go func() {
@@ -69,16 +89,17 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 	if report == nil {
 		c.logger.Info("launching atmo")
 
-		kill, err := exec.Run(
-			atmoCommand(c.config, atmoPorts[0]),
-			"ATMO_HTTP_PORT="+atmoPorts[0],
-			"ATMO_CONTROL_PLANE=localhost:9090",
+		uuid, pid, err := exec.Run(
+			atmoCommand(c.config, atmoPort),
+			"ATMO_HTTP_PORT="+atmoPort,
+			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
 		)
+
 		if err != nil {
 			errchan <- errors.Wrap(err, "failed to Run Atmo")
 		}
 
-		c.atmo.add(atmoPorts[0], kill)
+		c.atmo.add(atmoPort, uuid, pid)
 	}
 }
 
@@ -179,11 +200,23 @@ func loadConfig() (*config, error) {
 		execMode = mode
 	}
 
+	controlPlane := defaultControlPlane
+	if cp, eExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); eExists {
+		controlPlane = cp
+	}
+
+	envToken := ""
+	if et, eExists := os.LookupEnv("CONSTD_ENV_TOKEN"); eExists {
+		envToken = et
+	}
+
 	c := &config{
-		bundlePath: bundlePath,
-		execMode:   execMode,
-		satTag:     satVersion,
-		atmoTag:    atmoVersion,
+		bundlePath:   bundlePath,
+		execMode:     execMode,
+		satTag:       satVersion,
+		atmoTag:      atmoVersion,
+		controlPlane: controlPlane,
+		envToken:     envToken,
 	}
 
 	return c, nil
