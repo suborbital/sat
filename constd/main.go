@@ -120,7 +120,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
 			}
 
-			watcher := c.sats[runnable.FQFN]
+			satWatcher := c.sats[runnable.FQFN]
 
 			launch := func() {
 				cmd, port := satCommand(c.config, runnable)
@@ -137,7 +137,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 					errchan <- errors.Wrap(err, "sat exited with error")
 				}
 
-				watcher.add(port, uuid, pid)
+				satWatcher.add(port, uuid, pid)
 			}
 
 			// we want to max out at 8 threads per instance
@@ -146,7 +146,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				threshold = 8
 			}
 
-			report := watcher.report()
+			report := satWatcher.report()
 			if report == nil {
 				// if no instances exist, launch one
 				c.logger.Warn("launching", runnable.FQFN)
@@ -168,7 +168,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 					// if the current instances have too much spare time on their hands
 					c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-					watcher.terminate()
+					satWatcher.terminate()
 				}
 			}
 
@@ -176,7 +176,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				for _, p := range report.failedPorts {
 					c.logger.Warn("killing instance from failed port", p)
 
-					watcher.terminateInstance(p)
+					satWatcher.terminateInstance(p)
 				}
 			}
 		}
