@@ -93,6 +93,8 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 			atmoCommand(c.config, atmoPort),
 			"ATMO_HTTP_PORT="+atmoPort,
 			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
+			"ATMO_ENV_TOKEN="+c.config.envToken,
+			"ATMO_HEADLESS=true",
 		)
 
 		if err != nil {
@@ -112,6 +114,8 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 		for i := range runnables {
 			runnable := runnables[i]
 
+			c.logger.Info("reconciling", runnable.FQFN)
+
 			if _, exists := c.sats[runnable.FQFN]; !exists {
 				c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
 			}
@@ -122,17 +126,18 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				cmd, port := satCommand(c.config, runnable)
 
 				// repeat forever in case the command does error out
-				kill, err := exec.Run(
+				uuid, pid, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
-					"SAT_CONTROL_PLANE=localhost:9090",
+					"SAT_ENV_TOKEN="+c.config.envToken,
+					"SAT_CONTROL_PLANE="+c.config.controlPlane,
 				)
 
 				if err != nil {
 					errchan <- errors.Wrap(err, "sat exited with error")
 				}
 
-				watcher.add(port, kill)
+				watcher.add(port, uuid, pid)
 			}
 
 			// we want to max out at 8 threads per instance
@@ -147,7 +152,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				c.logger.Warn("launching", runnable.FQFN)
 
 				go launch()
-			} else if report.totalThreads/report.instCount >= threshold {
+			} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
 				if report.instCount >= runtime.NumCPU() {
 					c.logger.Warn("maximum instance count reached for", runnable.Name)
 				} else {
@@ -156,14 +161,14 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 
 					go launch()
 				}
-			} else if report.totalThreads/report.instCount < threshold {
+			} else if report.instCount > 0 && report.totalThreads/report.instCount < threshold {
 				if report.instCount == 1 {
 					// that's fine, do nothing
 				} else {
 					// if the current instances have too much spare time on their hands
 					c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-					watcher.kill()
+					watcher.terminate()
 				}
 			}
 
@@ -171,7 +176,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				for _, p := range report.failedPorts {
 					c.logger.Warn("killing instance from failed port", p)
 
-					watcher.killPort(p)
+					watcher.terminateInstance(p)
 				}
 			}
 		}
@@ -179,12 +184,6 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 }
 
 func loadConfig() (*config, error) {
-	if len(os.Args) < 2 {
-		return nil, errors.New("missing required argument: bundle path")
-	}
-
-	bundlePath := os.Args[1]
-
 	satVersion := "latest"
 	if version, sExists := os.LookupEnv("CONSTD_SAT_VERSION"); sExists {
 		satVersion = version
@@ -208,6 +207,14 @@ func loadConfig() (*config, error) {
 	envToken := ""
 	if et, eExists := os.LookupEnv("CONSTD_ENV_TOKEN"); eExists {
 		envToken = et
+	}
+
+	var bundlePath string
+
+	if controlPlane == defaultControlPlane && len(os.Args) < 2 {
+		return nil, errors.New("missing required argument: bundle path")
+	} else if len(os.Args) == 2 {
+		bundlePath = os.Args[1]
 	}
 
 	c := &config{
