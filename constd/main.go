@@ -8,11 +8,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/sat/constd/exec"
 	"github.com/suborbital/vektor/vlog"
 )
 
-var atmoPorts = []string{"8080", "8081", "8082"}
+const (
+	atmoPort            = "8080"
+	defaultControlPlane = "localhost:9090"
+)
 
 type constd struct {
 	logger *vlog.Logger
@@ -22,11 +26,12 @@ type constd struct {
 }
 
 type config struct {
-	bundlePath string
-	execMode   string
-	satTag     string
-	atmoTag    string
-	atmoCount  int
+	bundlePath   string
+	execMode     string
+	satTag       string
+	atmoTag      string
+	controlPlane string
+	envToken     string
 }
 
 func main() {
@@ -46,7 +51,22 @@ func main() {
 		sats:   map[string]*watcher{},
 	}
 
-	appSource, errchan := startAppSourceServer(config.bundlePath)
+	var appSource appsource.AppSource
+	var errchan chan error
+
+	// if an external control plane hasn't been set, act as the control plane
+	// but if one has been set, use it (and launch all children with it configured)
+	if c.config.controlPlane == defaultControlPlane {
+		appSource, errchan = startAppSourceServer(config.bundlePath)
+	} else {
+		appSource = appsource.NewHTTPSource(c.config.controlPlane)
+
+		if err := appSource.Start(*options.NewWithModifiers()); err != nil {
+			log.Fatal(errors.Wrap(err, "failed to appSource.Start"))
+		}
+
+		errchan = make(chan error)
+	}
 
 	// main event loop
 	go func() {
@@ -69,97 +89,101 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 	if report == nil {
 		c.logger.Info("launching atmo")
 
-		kill, err := exec.Run(
-			atmoCommand(c.config, atmoPorts[0]),
-			"ATMO_HTTP_PORT="+atmoPorts[0],
-			"ATMO_CONTROL_PLANE=localhost:9090",
+		uuid, pid, err := exec.Run(
+			atmoCommand(c.config, atmoPort),
+			"ATMO_HTTP_PORT="+atmoPort,
+			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
+			"ATMO_ENV_TOKEN="+c.config.envToken,
+			"ATMO_HEADLESS=true",
 		)
+
 		if err != nil {
 			errchan <- errors.Wrap(err, "failed to Run Atmo")
 		}
 
-		c.atmo.add(atmoPorts[0], kill)
+		c.atmo.add(atmoPort, uuid, pid)
 	}
 }
 
 func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan chan error) {
-	runnables := appSource.Runnables()
+	apps := appSource.Applications()
 
-	for i := range runnables {
-		runnable := runnables[i]
+	for _, app := range apps {
+		runnables := appSource.Runnables(app.Identifier, app.AppVersion)
 
-		if _, exists := c.sats[runnable.FQFN]; !exists {
-			c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
-		}
+		for i := range runnables {
+			runnable := runnables[i]
 
-		watcher := c.sats[runnable.FQFN]
+			c.logger.Info("reconciling", runnable.FQFN)
 
-		launch := func() {
-			cmd, port := satCommand(c.config, runnable)
-
-			// repeat forever in case the command does error out
-			kill, err := exec.Run(
-				cmd,
-				"SAT_HTTP_PORT="+port,
-				"SAT_CONTROL_PLANE=localhost:9090",
-			)
-
-			if err != nil {
-				errchan <- errors.Wrap(err, "sat exited with error")
+			if _, exists := c.sats[runnable.FQFN]; !exists {
+				c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
 			}
 
-			watcher.add(port, kill)
-		}
+			satWatcher := c.sats[runnable.FQFN]
 
-		// we want to max out at 8 threads per instance
-		threshold := runtime.NumCPU() / 2
-		if threshold > 8 {
-			threshold = 8
-		}
+			launch := func() {
+				cmd, port := satCommand(c.config, runnable)
 
-		report := watcher.report()
-		if report == nil {
-			// if no instances exist, launch one
-			c.logger.Warn("launching", runnable.FQFN)
+				// repeat forever in case the command does error out
+				uuid, pid, err := exec.Run(
+					cmd,
+					"SAT_HTTP_PORT="+port,
+					"SAT_ENV_TOKEN="+c.config.envToken,
+					"SAT_CONTROL_PLANE="+c.config.controlPlane,
+				)
 
-			go launch()
-		} else if report.totalThreads/report.instCount >= threshold {
-			if report.instCount >= runtime.NumCPU() {
-				c.logger.Warn("maximum instance count reached for", runnable.Name)
-			} else {
-				// if the current instances seem overwhelmed, add one
-				c.logger.Warn("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+				if err != nil {
+					errchan <- errors.Wrap(err, "sat exited with error")
+				}
+
+				satWatcher.add(port, uuid, pid)
+			}
+
+			// we want to max out at 8 threads per instance
+			threshold := runtime.NumCPU() / 2
+			if threshold > 8 {
+				threshold = 8
+			}
+
+			report := satWatcher.report()
+			if report == nil {
+				// if no instances exist, launch one
+				c.logger.Warn("launching", runnable.FQFN)
 
 				go launch()
+			} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
+				if report.instCount >= runtime.NumCPU() {
+					c.logger.Warn("maximum instance count reached for", runnable.Name)
+				} else {
+					// if the current instances seem overwhelmed, add one
+					c.logger.Warn("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+
+					go launch()
+				}
+			} else if report.instCount > 0 && report.totalThreads/report.instCount < threshold {
+				if report.instCount == 1 {
+					// that's fine, do nothing
+				} else {
+					// if the current instances have too much spare time on their hands
+					c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+
+					satWatcher.terminate()
+				}
 			}
-		} else if report.totalThreads/report.instCount < threshold {
-			if report.instCount == 1 {
-				// that's fine, do nothing
-			} else {
-				// if the current instances have too much spare time on their hands
-				c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-				watcher.kill()
-			}
-		}
+			if report != nil {
+				for _, p := range report.failedPorts {
+					c.logger.Warn("killing instance from failed port", p)
 
-		if report != nil {
-			for _, p := range report.failedPorts {
-				c.logger.Warn("killing instance from failed port", p)
-
-				watcher.killPort(p)
+					satWatcher.terminateInstance(p)
+				}
 			}
 		}
 	}
 }
 
 func loadConfig() (*config, error) {
-	if len(os.Args) < 2 {
-		return nil, errors.New("missing required argument: bundle path")
-	}
-
-	bundlePath := os.Args[1]
-
 	satVersion := "latest"
 	if version, sExists := os.LookupEnv("CONSTD_SAT_VERSION"); sExists {
 		satVersion = version
@@ -175,11 +199,31 @@ func loadConfig() (*config, error) {
 		execMode = mode
 	}
 
+	controlPlane := defaultControlPlane
+	if cp, eExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); eExists {
+		controlPlane = cp
+	}
+
+	envToken := ""
+	if et, eExists := os.LookupEnv("CONSTD_ENV_TOKEN"); eExists {
+		envToken = et
+	}
+
+	var bundlePath string
+
+	if controlPlane == defaultControlPlane && len(os.Args) < 2 {
+		return nil, errors.New("missing required argument: bundle path")
+	} else if len(os.Args) == 2 {
+		bundlePath = os.Args[1]
+	}
+
 	c := &config{
-		bundlePath: bundlePath,
-		execMode:   execMode,
-		satTag:     satVersion,
-		atmoTag:    atmoVersion,
+		bundlePath:   bundlePath,
+		execMode:     execMode,
+		satTag:       satVersion,
+		atmoTag:      atmoVersion,
+		controlPlane: controlPlane,
+		envToken:     envToken,
 	}
 
 	return c, nil

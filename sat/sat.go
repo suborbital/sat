@@ -13,6 +13,7 @@ import (
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 	wruntime "github.com/suborbital/reactr/rwasm/runtime"
+	"github.com/suborbital/sat/sat/process"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -47,7 +48,6 @@ func New(config *Config) (*Sat, error) {
 	wruntime.UseInternalLogger(config.Logger)
 
 	exec := executor.NewWithGrav(config.Logger, nil)
-	exec.UseCapabilityConfig(config.CapConfig)
 
 	var runner rt.Runnable
 	if config.Runnable != nil && len(config.Runnable.ModuleRef.Data) > 0 {
@@ -59,6 +59,7 @@ func New(config *Config) (*Sat, error) {
 	exec.Register(
 		config.JobType,
 		runner,
+		&config.CapConfig,
 		rt.Autoscale(24),
 		rt.MaxRetries(0),
 		rt.RetrySeconds(0),
@@ -126,7 +127,13 @@ func (s *Sat) Start() error {
 	s.e.ListenAndRun(s.c.JobType, s.handleFnResult)
 
 	if err := connectStaticPeers(s.c.Logger, s.g); err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrap(err, "failed to connectStaticPeers"))
+	}
+
+	// write a file to disk which describes this instance
+	info := process.NewInfo(s.c.Port, s.c.JobType)
+	if err := info.Write(s.c.ProcUUID); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to Write process info"))
 	}
 
 	shutdownChan := make(chan error)

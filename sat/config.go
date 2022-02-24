@@ -4,13 +4,13 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
@@ -38,7 +38,9 @@ type Config struct {
 	Port            int
 	UseStdin        bool
 	ControlPlaneUrl string
+	EnvToken        string
 	Logger          *vlog.Logger
+	ProcUUID        string
 }
 
 type app struct {
@@ -77,14 +79,9 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		if err := appClient.Start(opts); err != nil {
 			return nil, errors.Wrap(err, "failed to appSource.Start")
 		}
-
-		rendered, err := capabilities.Render(caps, appClient, logger)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to capabilities.Render")
-		}
-
-		caps = rendered
 	}
+
+	envToken := os.Getenv("SAT_ENV_TOKEN")
 
 	// next, handle the runnable arg being a URL, an FQFN, or a path on disk
 	if isURL(runnableArg) {
@@ -99,12 +96,19 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		if useControlPlane {
 			logger.Debug("fetching module from control plane")
 
-			cpRunnable, err := appClient.FindRunnable(runnableArg, "")
+			cpRunnable, err := appClient.FindRunnable(runnableArg, envToken)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to FindRunnable")
 			}
 
 			runnable = cpRunnable
+
+			rendered, err := capabilities.ResolveFromSource(appClient, FQFN.Identifier, FQFN.Namespace, FQFN.Version, logger)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to capabilities.Render")
+			}
+
+			caps = rendered
 		}
 	} else {
 		diskRunnable, err := findRunnableDotYaml(runnableArg)
@@ -136,6 +140,15 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		port = fmt.Sprintf("%d", randPort.Int64()+1000)
 	}
 
+	procUUID, ok := os.LookupEnv("SAT_UUID")
+	if !ok {
+		procUUID = uuid.New().String()
+	} else {
+		if _, err := uuid.Parse(procUUID); err != nil {
+			return nil, errors.Wrap(err, "SAT_UUID is set, but is not valid UUID")
+		}
+	}
+
 	// set some defaults in the case we're not running in an application
 	portInt, _ := strconv.Atoi(port)
 	jobType := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
@@ -147,12 +160,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		jobType = runnable.FQFN
 		FQFN = fqfn.Parse(runnable.FQFN)
 
-		suffix, err := randSuffix()
-		if err != nil {
-			log.Fatal(errors.Wrap(err, "failed to randSuffix"))
-		}
-
-		prettyName = fmt.Sprintf("%s-%s", jobType, suffix)
+		prettyName = fmt.Sprintf("%s-%s", jobType, procUUID[:6])
 
 		// replace the logger with something more detailed
 		logger = vlog.Default(
@@ -178,6 +186,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		UseStdin:        useStdin,
 		ControlPlaneUrl: controlPlane,
 		Logger:          logger,
+		ProcUUID:        procUUID,
 	}
 
 	return c, nil
