@@ -1,3 +1,4 @@
+VERSION = $(shell cat .image-ver)
 
 sat:
 	go build -o .bin/sat -tags netgo,wasmtime .
@@ -12,7 +13,7 @@ docker:
 	docker build . -t suborbital/sat:dev
 
 docker/publish:
-	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/sat:$(shell date +%Y.%m.%d-%M) --push
+	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/sat:$(VERSION) --push
 	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/sat:latest --push
 
 docker/dev/publish:
@@ -26,6 +27,9 @@ docker/wasmtime/publish:
 
 run:
 	docker run -it -e SAT_HTTP_PORT=8080 -p 8080:8080 -v $(PWD)/examples:/runnables suborbital/sat:dev sat /runnables/hello-echo/hello-echo.wasm
+
+test: 
+	go test -v ./...
 
 # CONSTD TARGETS
 
