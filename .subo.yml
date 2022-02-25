@@ -1,0 +1,10 @@
+dotVersionFiles:
+  - sat/version.go
+  - .image-ver
+
+preMakeTargets:
+  - sat
+  - test
+
+postMakeTargets:
+  - docker/publish

@@ -43,6 +43,10 @@ type Config struct {
 	ProcUUID        string
 }
 
+type satInfo struct {
+	SatVersion string `json:"sat_version"`
+}
+
 type app struct {
 	Name string `json:"name"`
 }
@@ -63,6 +67,7 @@ func ConfigFromArgs() (*Config, error) {
 func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	logger := vlog.Default(
 		vlog.EnvPrefix("SAT"),
+		vlog.AppMeta(satInfo{SatVersion: SatDotVersion}),
 	)
 
 	var runnable *directive.Runnable
