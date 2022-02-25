@@ -65,6 +65,10 @@ func main() {
 			log.Fatal(errors.Wrap(err, "failed to appSource.Start"))
 		}
 
+		if err := registerWithControlPlane(c.config); err != nil {
+			log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
+		}
+
 		errchan = make(chan error)
 	}
 
