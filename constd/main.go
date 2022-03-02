@@ -203,7 +203,7 @@ func loadConfig() (*config, error) {
 	}
 
 	controlPlane := defaultControlPlane
-	if cp, eExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); eExists {
+	if cp, cExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); cExists {
 		controlPlane = cp
 	}
 
