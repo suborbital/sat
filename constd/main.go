@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/sat/constd/exec"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -61,8 +60,8 @@ func main() {
 	} else {
 		appSource = appsource.NewHTTPSource(c.config.controlPlane)
 
-		if err := appSource.Start(*options.NewWithModifiers()); err != nil {
-			log.Fatal(errors.Wrap(err, "failed to appSource.Start"))
+		if err := startAppSourceWithRetry(appSource); err != nil {
+			log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
 		}
 
 		if err := registerWithControlPlane(c.config); err != nil {
