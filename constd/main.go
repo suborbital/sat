@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/sat/constd/exec"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -32,6 +31,7 @@ type config struct {
 	atmoTag      string
 	controlPlane string
 	envToken     string
+	upstreamHost string
 }
 
 func main() {
@@ -61,8 +61,12 @@ func main() {
 	} else {
 		appSource = appsource.NewHTTPSource(c.config.controlPlane)
 
-		if err := appSource.Start(*options.NewWithModifiers()); err != nil {
-			log.Fatal(errors.Wrap(err, "failed to appSource.Start"))
+		if err := startAppSourceWithRetry(appSource); err != nil {
+			log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
+		}
+
+		if err := registerWithControlPlane(c.config); err != nil {
+			log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
 		}
 
 		errchan = make(chan error)
@@ -200,13 +204,18 @@ func loadConfig() (*config, error) {
 	}
 
 	controlPlane := defaultControlPlane
-	if cp, eExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); eExists {
+	if cp, cExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); cExists {
 		controlPlane = cp
 	}
 
 	envToken := ""
 	if et, eExists := os.LookupEnv("CONSTD_ENV_TOKEN"); eExists {
 		envToken = et
+	}
+
+	upstreamHost := ""
+	if uh, uExists := os.LookupEnv("CONSTD_UPSTREAM_HOST"); uExists {
+		upstreamHost = uh
 	}
 
 	var bundlePath string
@@ -224,6 +233,7 @@ func loadConfig() (*config, error) {
 		atmoTag:      atmoVersion,
 		controlPlane: controlPlane,
 		envToken:     envToken,
+		upstreamHost: upstreamHost,
 	}
 
 	return c, nil
