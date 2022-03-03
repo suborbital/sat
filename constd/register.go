@@ -21,9 +21,16 @@ func registerWithControlPlane(config *config) error {
 		return nil
 	}
 
-	selfIPs, err := getSelfIPAddress()
-	if err != nil {
-		return errors.Wrap(err, "failed to getSelfIPAddress")
+	var selfIPs []net.IP
+	if config.upstreamHost != "" {
+		selfIPs = []net.IP{net.ParseIP(config.upstreamHost)}
+	} else {
+		detectedIPs, err := getSelfIPAddress()
+		if err != nil {
+			return errors.Wrap(err, "failed to getSelfIPAddress")
+		}
+
+		selfIPs = detectedIPs
 	}
 
 	registerURL := fmt.Sprintf("%s/api/v1/upstream/register", config.controlPlane)

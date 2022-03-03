@@ -31,6 +31,7 @@ type config struct {
 	atmoTag      string
 	controlPlane string
 	envToken     string
+	upstreamHost string
 }
 
 func main() {
@@ -212,6 +213,11 @@ func loadConfig() (*config, error) {
 		envToken = et
 	}
 
+	upstreamHost := ""
+	if uh, uExists := os.LookupEnv("CONSTD_UPSTREAM_HOST"); uExists {
+		upstreamHost = uh
+	}
+
 	var bundlePath string
 
 	if controlPlane == defaultControlPlane && len(os.Args) < 2 {
@@ -227,6 +233,7 @@ func loadConfig() (*config, error) {
 		atmoTag:      atmoVersion,
 		controlPlane: controlPlane,
 		envToken:     envToken,
+		upstreamHost: upstreamHost,
 	}
 
 	return c, nil
