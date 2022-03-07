@@ -14,10 +14,10 @@ processors:
 
 exporters:
   otlp:
-    endpoint: ${HONEYCOMB_API_ENDPOINT}
+    endpoint: ${ATMO_TRACER_HONEYCOMB_API_ENDPOINT}
     headers:
-      "x-honeycomb-team":  ${HONEYCOMB_API_KEY}
-      "x-honeycomb-dataset": ${HONEYCOMB_DATASET}
+      "x-honeycomb-team":  ${ATMO_TRACER_HONEYCOMB_API_KEY}
+      "x-honeycomb-dataset": ${ATMO_TRACER_HONEYCOMB_DATASET}
   file:
     path: ./traces.json
 
