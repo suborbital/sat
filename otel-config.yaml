@@ -1,0 +1,30 @@
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+
+exporters:
+  otlp:
+    endpoint: ${HONEYCOMB_API_ENDPOINT}
+    headers:
+      "x-honeycomb-team":  ${HONEYCOMB_API_KEY}
+      "x-honeycomb-dataset": ${HONEYCOMB_DATASET}
+  file:
+    path: ./traces.json
+
+service:
+  extensions: [health_check,pprof,zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp, file]
