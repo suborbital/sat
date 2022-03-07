@@ -98,7 +98,6 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 			"ATMO_HTTP_PORT="+atmoPort,
 			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
 			"ATMO_ENV_TOKEN="+c.config.envToken,
-			"ATMO_HEADLESS=true",
 		)
 
 		if err != nil {
