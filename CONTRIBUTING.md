@@ -9,28 +9,37 @@ Contributions of all kinds are welcome for all Suborbital projects. There are tw
 Beyond all else please be kind, and welcome to the Suborbital family of projects! We're really glad you're here.
 
 ## HACKTOBERFEST
+
 Hacktoberfest contributions are welcome! For this project, we want to showcase some interesting uses for Sat, so we would love to see some new examples added to the repo! Examples are an extremely effective way to help developers learn how to take advantage of WebAssembly on the server.
 
 To make a Hacktoberfest contribution, fork and clone this repo and use our `Subo` CLI tool ([here](https://github.com/suborbital/subo)) to create a new example:
+
 ```bash
 # you can use --lang typescript, rust, or swift!
 # pick a name that represents what the function does
 subo create runnable my-new-function --dir ./examples --lang typescript
 ```
+
 Next, build Sat:
+
 ```bash
 make sat/dynamic
 ```
+
 Then write a function that does something cool! You can find documentation for writing functions [here](https://atmo.suborbital.dev/runnable-api/introduction). Ideas could include sending a message to a Discord server, fetching data from an API you're familiar with, or anything else you can think of!
 
 Test your new function by building it (make sure you have Docker installed!):
+
 ```bash
 subo build ./examples/my-new-function
 ```
+
 And then run it:
+
 ```bash
 SAT_HTTP_PORT=8080 .bin/sat ./examples/my-new-function/my-new-function.wasm
 ```
+
 Make a POST request to `localhost:8080` and your function will run!
 
 Finally, open a PR with a title like this:
