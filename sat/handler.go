@@ -43,6 +43,10 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 		}
 
 		resp := result.(*request.CoordinatedResponse)
+		
+		for headerKey, headerValue := range resp.RespHeaders {
+			ctx.RespHeaders.Set(headerKey, headerValue)
+		}
 
 		return resp.Output, nil
 	}
