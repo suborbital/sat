@@ -1,15 +1,12 @@
-name: Testapalooza
+name: release
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    tags:
+      - v*
 
 jobs:
-
-  build:
-    name: Test
+  release:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,12 +29,10 @@ jobs:
         run: |
           go get -v -t -d ./...
 
-      - name: Run stdin test
-        run: |
-          make sat
-          make constd
-          echo "world" | .bin/sat --stdin ./examples/hello-echo/hello-echo.wasm
-
-      - name: Run Go tests
-        run: |
-          go test -v ./...
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
