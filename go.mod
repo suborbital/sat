@@ -3,6 +3,7 @@ module github.com/suborbital/sat
 go 1.17
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/suborbital/atmo v0.4.4-0.20220222201814-da77db39d31c
 	github.com/suborbital/grav v0.5.0
@@ -18,7 +19,6 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-redis/redis/v8 v8.11.4 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
