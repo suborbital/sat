@@ -98,7 +98,6 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 			"ATMO_HTTP_PORT="+atmoPort,
 			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
 			"ATMO_ENV_TOKEN="+c.config.envToken,
-			"ATMO_HEADLESS=true",
 		)
 
 		if err != nil {
@@ -118,7 +117,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 		for i := range runnables {
 			runnable := runnables[i]
 
-			c.logger.Info("reconciling", runnable.FQFN)
+			c.logger.Debug("reconciling", runnable.FQFN)
 
 			if _, exists := c.sats[runnable.FQFN]; !exists {
 				c.sats[runnable.FQFN] = newWatcher(runnable.FQFN, c.logger)
