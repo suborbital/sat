@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	// company packages.
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/vektor/vlog"
 
@@ -89,9 +88,8 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 		uuid, pid, err := exec.Run(
 			atmoCommand(c.config, atmoPort),
 			"ATMO_HTTP_PORT="+atmoPort,
-			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
-			"ATMO_ENV_TOKEN="+c.config.envToken,
-			"ATMO_HEADLESS=true",
+			"ATMO_CONTROL_PLANE="+c.config.ControlPlane,
+			"ATMO_ENV_TOKEN="+c.config.EnvToken,
 		)
 
 		if err != nil {
@@ -126,8 +124,8 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan c
 				uuid, pid, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
-					"SAT_ENV_TOKEN="+c.config.envToken,
-					"SAT_CONTROL_PLANE="+c.config.controlPlane,
+					"SAT_ENV_TOKEN="+c.config.EnvToken,
+					"SAT_CONTROL_PLANE="+c.config.ControlPlane,
 				)
 
 				if err != nil {

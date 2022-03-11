@@ -7,18 +7,22 @@ import (
 	"math/big"
 
 	"github.com/pkg/errors"
+
+	// company packages.
 	"github.com/suborbital/atmo/directive"
+
+	"github.com/suborbital/sat/constd/config"
 )
 
-func atmoCommand(config *config, port string) string {
+func atmoCommand(config config.Config, port string) string {
 	var cmd string
 
-	switch config.execMode {
+	switch config.ExecMode {
 	case "docker":
 		cmd = fmt.Sprintf(
 			"docker run -p %s:%s -e ATMO_HTTP_PORT=%s -e ATMO_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/atmo-proxy:%s atmo-proxy",
 			port, port, port,
-			config.atmoTag,
+			config.AtmoTag,
 		)
 	case "metal":
 		cmd = "atmo-proxy"
@@ -30,7 +34,7 @@ func atmoCommand(config *config, port string) string {
 }
 
 // satCommand returns the command and the port string
-func satCommand(config *config, runnable directive.Runnable) (string, string) {
+func satCommand(config config.Config, runnable directive.Runnable) (string, string) {
 	port, err := randPort()
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to randPort"))
@@ -38,12 +42,12 @@ func satCommand(config *config, runnable directive.Runnable) (string, string) {
 
 	var cmd string
 
-	switch config.execMode {
+	switch config.ExecMode {
 	case "docker":
 		cmd = fmt.Sprintf(
 			"docker run --rm -p %s:%s -e SAT_HTTP_PORT=%s -e SAT_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/sat:%s sat %s",
 			port, port, port,
-			config.satTag,
+			config.SatTag,
 			runnable.FQFN,
 		)
 	case "metal":
