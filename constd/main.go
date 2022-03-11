@@ -52,12 +52,12 @@ func main() {
 	}
 
 	var appSource appsource.AppSource
-	var errchan chan error
+	var errChan chan error
 
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
 	if c.config.controlPlane == defaultControlPlane {
-		appSource, errchan = startAppSourceServer(config.bundlePath)
+		appSource, errChan = startAppSourceServer(config.bundlePath)
 	} else {
 		appSource = appsource.NewHTTPSource(c.config.controlPlane)
 
@@ -69,26 +69,26 @@ func main() {
 			log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
 		}
 
-		errchan = make(chan error)
+		errChan = make(chan error)
 	}
 
 	// main event loop
 	go func() {
 		for {
-			c.reconcileAtmo(errchan)
-			c.reconcileConstellation(appSource, errchan)
+			c.reconcileAtmo(errChan)
+			c.reconcileConstellation(appSource, errChan)
 
 			time.Sleep(time.Second)
 		}
 	}()
 
 	// assuming nothing above throws an error, this will block forever
-	for err := range errchan {
+	for err := range errChan {
 		log.Fatal(errors.Wrap(err, "encountered error"))
 	}
 }
 
-func (c *constd) reconcileAtmo(errchan chan error) {
+func (c *constd) reconcileAtmo(errChan chan error) {
 	report := c.atmo.report()
 	if report == nil {
 		c.logger.Info("launching atmo")
@@ -102,14 +102,14 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 		)
 
 		if err != nil {
-			errchan <- errors.Wrap(err, "failed to Run Atmo")
+			errChan <- errors.Wrap(err, "failed to Run Atmo")
 		}
 
 		c.atmo.add(atmoPort, uuid, pid)
 	}
 }
 
-func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan chan error) {
+func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
 	apps := appSource.Applications()
 
 	for _, app := range apps {
@@ -138,7 +138,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				)
 
 				if err != nil {
-					errchan <- errors.Wrap(err, "sat exited with error")
+					errChan <- errors.Wrap(err, "sat exited with error")
 				}
 
 				satWatcher.add(port, uuid, pid)
