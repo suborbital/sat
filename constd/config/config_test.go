@@ -57,6 +57,13 @@ func (cts *ConfigTestSuite) TestParse() {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name:    "parses the config with defaults, do not pass bundlepath, receive error",
+			args:    []string{},
+			setEnvs: map[string]string{},
+			want:    config.Config{},
+			wantErr: assert.Error,
+		},
 	}
 	for _, tt := range tests {
 		cts.Run(tt.name, func() {
