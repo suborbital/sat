@@ -7,22 +7,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	// company packages.
 	"github.com/suborbital/sat/constd/config"
 )
 
 func (cts *ConfigTestSuite) TestParse() {
+	bundlePath := "./bundle.wasm.zip"
+
 	tests := []struct {
 		name    string
 		args    []string
-		envs    map[string]string
+		setEnvs map[string]string
 		want    config.Config
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
 			name: "parses config correctly with correct environment variable values",
-			args: []string{"./bundle.wasm.zip"},
-			envs: map[string]string{
+			args: []string{bundlePath},
+			setEnvs: map[string]string{
 				"CONSTD_EXEC_MODE":     "metal",
 				"CONSTD_SAT_VERSION":   "1.0.2",
 				"CONSTD_ATMO_VERSION":  "3.4.5",
@@ -31,7 +32,7 @@ func (cts *ConfigTestSuite) TestParse() {
 				"CONSTD_UPSTREAM_HOST": "192.168.1.33:9888",
 			},
 			want: config.Config{
-				BundlePath:   "./bundle.wasm.zip",
+				BundlePath:   bundlePath,
 				ExecMode:     "metal",
 				SatTag:       "1.0.2",
 				AtmoTag:      "3.4.5",
@@ -41,13 +42,28 @@ func (cts *ConfigTestSuite) TestParse() {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name:    "parses the config with defaults, everything unset",
+			args:    []string{bundlePath},
+			setEnvs: map[string]string{},
+			want: config.Config{
+				BundlePath:   bundlePath,
+				ExecMode:     "docker",
+				SatTag:       "latest",
+				AtmoTag:      "latest",
+				ControlPlane: config.DefaultControlPlane,
+				EnvToken:     "",
+				UpstreamHost: "",
+			},
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range tests {
 		cts.Run(tt.name, func() {
 			cts.SetupTest()
 			var err error
 
-			for k, v := range tt.envs {
+			for k, v := range tt.setEnvs {
 				err = os.Setenv(k, v)
 				if err != nil {
 					cts.FailNowf(

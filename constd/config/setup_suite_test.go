@@ -1,8 +1,9 @@
 package config_test
 
 import (
-	"github.com/stretchr/testify/suite"
 	"os"
+
+	"github.com/stretchr/testify/suite"
 )
 
 // ConfigTestSuite tests parsing configuration values and error handling.
@@ -100,11 +101,11 @@ func (cts *ConfigTestSuite) SetupTest() {
 	}
 
 	for _, v := range envVars {
-		err = os.Setenv(v, "")
+		err = os.Unsetenv(v)
 		if err != nil {
 			cts.Require().FailNowf(
 				"ConfigTestSuite.SetupTest",
-				"setting environment variable [%s] to empty string failed with error [%s]",
+				"tried to unset environment variable [%s], got error [%s]",
 				v,
 				err,
 			)
