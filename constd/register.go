@@ -9,6 +9,8 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+
+	"github.com/suborbital/sat/constd/config"
 )
 
 // AddUpstreamRequest is a request to add an upstream
@@ -16,14 +18,14 @@ type AddUpstreamRequest struct {
 	UpstreamAddress string `json:"upstreamAddress"`
 }
 
-func registerWithControlPlane(config *config) error {
-	if config.controlPlane == defaultControlPlane {
+func registerWithControlPlane(conf config.Config) error {
+	if conf.ControlPlane == config.DefaultControlPlane {
 		return nil
 	}
 
 	var selfIPs []net.IP
-	if config.upstreamHost != "" {
-		selfIPs = []net.IP{net.ParseIP(config.upstreamHost)}
+	if conf.UpstreamHost != "" {
+		selfIPs = []net.IP{net.ParseIP(conf.UpstreamHost)}
 	} else {
 		detectedIPs, err := getSelfIPAddress()
 		if err != nil {
@@ -33,7 +35,7 @@ func registerWithControlPlane(config *config) error {
 		selfIPs = detectedIPs
 	}
 
-	registerURL := fmt.Sprintf("%s/api/v1/upstream/register", config.controlPlane)
+	registerURL := fmt.Sprintf("%s/api/v1/upstream/register", conf.ControlPlane)
 
 	for _, ip := range selfIPs {
 		upstreamURL, err := url.Parse(fmt.Sprintf("http://%s:%s", ip.String(), atmoPort))

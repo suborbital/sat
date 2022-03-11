@@ -7,35 +7,28 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	// company packages.
 	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/sat/constd/exec"
 	"github.com/suborbital/vektor/vlog"
+
+	"github.com/suborbital/sat/constd/config"
+	"github.com/suborbital/sat/constd/exec"
 )
 
 const (
-	atmoPort            = "8080"
-	defaultControlPlane = "localhost:9090"
+	atmoPort = "8080"
 )
 
 type constd struct {
 	logger *vlog.Logger
-	config *config
+	config config.Config
 	atmo   *watcher
 	sats   map[string]*watcher // map of FQFNs to watchers
 }
 
-type config struct {
-	bundlePath   string
-	execMode     string
-	satTag       string
-	atmoTag      string
-	controlPlane string
-	envToken     string
-	upstreamHost string
-}
-
 func main() {
-	config, err := loadConfig()
+	conf, err := config.Parse(os.Args[1:])
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to loadConfig"))
 	}
@@ -46,7 +39,7 @@ func main() {
 
 	c := &constd{
 		logger: l,
-		config: config,
+		config: conf,
 		atmo:   newWatcher("atmo", l),
 		sats:   map[string]*watcher{},
 	}
@@ -56,10 +49,10 @@ func main() {
 
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
-	if c.config.controlPlane == defaultControlPlane {
-		appSource, errChan = startAppSourceServer(config.bundlePath)
+	if c.config.ControlPlane == config.DefaultControlPlane {
+		appSource, errChan = startAppSourceServer(c.config.BundlePath)
 	} else {
-		appSource = appsource.NewHTTPSource(c.config.controlPlane)
+		appSource = appsource.NewHTTPSource(c.config.ControlPlane)
 
 		if err := startAppSourceWithRetry(l, appSource); err != nil {
 			log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
@@ -185,56 +178,4 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan c
 			}
 		}
 	}
-}
-
-func loadConfig() (*config, error) {
-	satVersion := "latest"
-	if version, sExists := os.LookupEnv("CONSTD_SAT_VERSION"); sExists {
-		satVersion = version
-	}
-
-	atmoVersion := "latest"
-	if version, aExists := os.LookupEnv("CONSTD_ATMO_VERSION"); aExists {
-		atmoVersion = version
-	}
-
-	execMode := "docker"
-	if mode, eExists := os.LookupEnv("CONSTD_EXEC_MODE"); eExists {
-		execMode = mode
-	}
-
-	controlPlane := defaultControlPlane
-	if cp, cExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); cExists {
-		controlPlane = cp
-	}
-
-	envToken := ""
-	if et, eExists := os.LookupEnv("CONSTD_ENV_TOKEN"); eExists {
-		envToken = et
-	}
-
-	upstreamHost := ""
-	if uh, uExists := os.LookupEnv("CONSTD_UPSTREAM_HOST"); uExists {
-		upstreamHost = uh
-	}
-
-	var bundlePath string
-
-	if controlPlane == defaultControlPlane && len(os.Args) < 2 {
-		return nil, errors.New("missing required argument: bundle path")
-	} else if len(os.Args) == 2 {
-		bundlePath = os.Args[1]
-	}
-
-	c := &config{
-		bundlePath:   bundlePath,
-		execMode:     execMode,
-		satTag:       satVersion,
-		atmoTag:      atmoVersion,
-		controlPlane: controlPlane,
-		envToken:     envToken,
-		upstreamHost: upstreamHost,
-	}
-
-	return c, nil
 }
