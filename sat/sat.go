@@ -42,8 +42,8 @@ type loggerScope struct {
 	RequestID string `json:"request_id"`
 }
 
-var wait bool = false
-var headless bool = false
+var wait = false
+var headless = false
 
 // New initializes Reactr, Vektor, and Grav in a Sat instance
 // if config.UseStdin is true, only Reactr will be created
