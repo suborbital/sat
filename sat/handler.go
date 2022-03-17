@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
+	// company packages.
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
@@ -22,10 +24,7 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 
 		result, err := exec.Do(s.j, req, ctx, nil)
 		if err != nil {
-			// check if the error type is rt.RunErr, because those are handled differently
-			if returnedErr, isRunErr := err.(rt.RunErr); isRunErr {
-				runErr = returnedErr
-			} else {
+			if !errors.As(err, runErr) {
 				s.l.Error(errors.Wrap(err, "failed to exec.Do"))
 				return nil, vk.E(http.StatusInternalServerError, "unknown error")
 			}
@@ -43,7 +42,7 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 		}
 
 		resp := result.(*request.CoordinatedResponse)
-		
+
 		for headerKey, headerValue := range resp.RespHeaders {
 			ctx.RespHeaders.Set(headerKey, headerValue)
 		}
