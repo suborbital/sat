@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
+	// company packages.
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -13,9 +15,10 @@ import (
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 	wruntime "github.com/suborbital/reactr/rwasm/runtime"
-	"github.com/suborbital/sat/sat/process"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+
+	"github.com/suborbital/sat/sat/process"
 )
 
 const (
