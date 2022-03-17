@@ -129,7 +129,10 @@ func (s *Sat) Start() error {
 
 	// set up the Executor to listen for jobs and handle them
 	s.e.UseGrav(s.g)
-	s.e.ListenAndRun(s.c.JobType, s.handleFnResult)
+
+	if err := s.e.ListenAndRun(s.c.JobType, s.handleFnResult); err != nil {
+		log.Fatal(errors.Wrap(err, "executor.ListenAndRun"))
+	}
 
 	if err := connectStaticPeers(s.c.Logger, s.g); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to connectStaticPeers"))
