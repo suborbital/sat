@@ -86,7 +86,6 @@ func New(config *Config) (*Sat, error) {
 	}
 
 	// Grav and Vektor will be started on call to s.Start()
-
 	sat.v = vk.New(
 		vk.UseLogger(config.Logger),
 		vk.UseAppName(config.PrettyName),
