@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/sat/sat"
 )
 
@@ -21,15 +22,15 @@ func main() {
 	}
 
 	if config.UseStdin {
-		if err := s.ExecFromStdin(); err != nil {
+		if err = s.ExecFromStdin(); err != nil {
 			log.Fatal(err)
 		}
 
 		return
 	}
 
-	if err := s.Start(); err != nil {
-		if err == http.ErrServerClosed {
+	if err = s.Start(); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
 			config.Logger.Info("sat server shutdown complete")
 		} else {
 			config.Logger.Error(errors.Wrap(err, "sat error, dirty shutdown complete"))
