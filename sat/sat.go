@@ -25,7 +25,7 @@ const (
 	MsgTypeAtmoFnResult = "atmo.fnresult"
 )
 
-// sat is a sat server with annoyingly terse field names (because it's smol)
+// Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
 	j string // the job name / FQFN
 
