@@ -59,7 +59,7 @@ func New(config *Config) (*Sat, error) {
 		runner = rwasm.NewRunner(config.RunnableArg)
 	}
 
-	exec.Register(
+	err := exec.Register(
 		config.JobType,
 		runner,
 		&config.CapConfig,
@@ -68,6 +68,9 @@ func New(config *Config) (*Sat, error) {
 		rt.RetrySeconds(0),
 		rt.PreWarm(),
 	)
+	if err != nil {
+		return nil, errors.Wrap(err, "exec.Register")
+	}
 
 	sat := &Sat{
 		c: config,
