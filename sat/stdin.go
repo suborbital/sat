@@ -7,11 +7,13 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+
+	// company packages.
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vk"
 )
 
-// execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout
+// ExecFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout.
 func (s *Sat) ExecFromStdin() error {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
