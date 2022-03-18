@@ -1,17 +1,15 @@
 package sat
 
 import (
-	"crypto/rand"
 	"flag"
 	"fmt"
-	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
 	"github.com/suborbital/atmo/atmo/appsource"
@@ -21,6 +19,8 @@ import (
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vlog"
+
+	satOptions "github.com/suborbital/sat/sat/options"
 )
 
 var useStdin bool
@@ -73,6 +73,11 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 
 	var runnable *directive.Runnable
 
+	opts, err := satOptions.Resolve(envconfig.OsLookuper())
+	if err != nil {
+		return nil, errors.Wrap(err, "configFromRunnableArg options.Resolve")
+	}
+
 	// first, determine if we need to connect to a control plane
 	controlPlane, useControlPlane := os.LookupEnv("SAT_CONTROL_PLANE")
 	appClient := appsource.NewHTTPSource(controlPlane)
@@ -80,14 +85,12 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 
 	if useControlPlane {
 		// configure the appSource not to wait if the controlPlane isn't available
-		opts := options.Options{Logger: logger, Wait: &wait, Headless: &headless}
+		atmoOpts := options.Options{Logger: logger, Wait: &wait, Headless: &headless}
 
-		if err := appClient.Start(opts); err != nil {
+		if err = appClient.Start(atmoOpts); err != nil {
 			return nil, errors.Wrap(err, "failed to appSource.Start")
 		}
 	}
-
-	envToken := os.Getenv("SAT_ENV_TOKEN")
 
 	// next, handle the runnable arg being a URL, an FQFN, or a path on disk
 	if isURL(runnableArg) {
@@ -102,7 +105,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		if useControlPlane {
 			logger.Debug("fetching module from control plane")
 
-			cpRunnable, err := appClient.FindRunnable(runnableArg, envToken)
+			cpRunnable, err := appClient.FindRunnable(runnableArg, opts.EnvToken)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to FindRunnable")
 			}
@@ -134,29 +137,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		runnable = diskRunnable
 	}
 
-	// next, figure out the configuration of the HTTP server
-	port, ok := os.LookupEnv("SAT_HTTP_PORT")
-	if !ok {
-		// choose a random port above 1000
-		randPort, err := rand.Int(rand.Reader, big.NewInt(10000))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to rand.Int")
-		}
-
-		port = fmt.Sprintf("%d", randPort.Int64()+1000)
-	}
-
-	procUUID, ok := os.LookupEnv("SAT_UUID")
-	if !ok {
-		procUUID = uuid.New().String()
-	} else {
-		if _, err := uuid.Parse(procUUID); err != nil {
-			return nil, errors.Wrap(err, "SAT_UUID is set, but is not valid UUID")
-		}
-	}
-
 	// set some defaults in the case we're not running in an application
-	portInt, _ := strconv.Atoi(port)
+	portInt, _ := strconv.Atoi(string(opts.Port))
 	jobType := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
 	FQFN := fqfn.Parse(jobType)
 	prettyName := jobType
@@ -166,7 +148,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		jobType = runnable.FQFN
 		FQFN = fqfn.Parse(runnable.FQFN)
 
-		prettyName = fmt.Sprintf("%s-%s", jobType, procUUID[:6])
+		prettyName = fmt.Sprintf("%s-%s", jobType, opts.ProcUUID[:6])
 
 		// replace the logger with something more detailed
 		logger = vlog.Default(
@@ -192,7 +174,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		UseStdin:        useStdin,
 		ControlPlaneUrl: controlPlane,
 		Logger:          logger,
-		ProcUUID:        procUUID,
+		ProcUUID:        string(opts.ProcUUID),
 	}
 
 	return c, nil
