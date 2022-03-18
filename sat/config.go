@@ -218,20 +218,3 @@ func findRunnableDotYaml(runnableArg string) (*directive.Runnable, error) {
 
 	return runnable, nil
 }
-
-func randSuffix() (string, error) {
-	alphabet := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-	suffix := ""
-
-	for i := 0; i < 6; i++ {
-		index, err := rand.Int(rand.Reader, big.NewInt(35))
-		if err != nil {
-			return "", errors.Wrap(err, "failed to rand.Int")
-		}
-
-		suffix += string(alphabet[index.Int64()])
-	}
-
-	return suffix, nil
-}
