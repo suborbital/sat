@@ -5,10 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
-
-	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/rcap"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type Options struct {
@@ -22,14 +18,18 @@ type Options struct {
 	TracerConfig TracerConfig  `env:",prefix=SAT_TRACER_"`
 }
 
+// ControlPlane is a struct, so we can use a pointer, so we can check whether it's been set in config. If set, it holds
+// address where the control plane is located so Sat can pull runnables from there.
 type ControlPlane struct {
 	Address string `env:"SAT_CONTROL_PLANE"`
 }
 
+// Ident holds the runnable ident. It's a struct, so we can optionally have it set to nil. Config uses it.
 type Ident struct {
 	Data string `env:"SAT_RUNNABLE_IDENT"`
 }
 
+// Version holds the runnable version. It's a struct, so we can optionally have it set to nil. Config uses it.
 type Version struct {
 	Data string `env:"SAT_RUNNABLE_VERSION"`
 }
@@ -59,19 +59,8 @@ type HoneycombConfig struct {
 	Dataset  string `env:"DATASET"`
 }
 
-type Config struct {
-	RunnableArg     string
-	JobType         string
-	PrettyName      string
-	Runnable        *directive.Runnable
-	Identifier      string
-	CapConfig       rcap.CapabilityConfig
-	UseStdin        bool
-	ControlPlaneUrl string
-	Logger          *vlog.Logger
-	ProcUUID        string
-}
-
+// Resolve will use the passed in envconfig.Lookuper to figure out the options of the Sat instance startup. If nil is
+// passed in, it will use the OsLookuper implementation.
 func Resolve(lookuper envconfig.Lookuper) (Options, error) {
 	if lookuper == nil {
 		lookuper = envconfig.OsLookuper()
