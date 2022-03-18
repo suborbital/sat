@@ -12,6 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/atmo/options"
@@ -19,7 +21,6 @@ import (
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vlog"
-	"gopkg.in/yaml.v2"
 )
 
 var useStdin bool
