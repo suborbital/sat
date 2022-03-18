@@ -24,6 +24,8 @@ func TestResolve(t *testing.T) {
 				"SAT_UUID":                      "63147f8b-cd25-4eba-acc2-6ff48e6970b6",
 				"SAT_CONTROL_PLANE":             "https://localhost:9091",
 				"SAT_TRACER_TYPE":               "custom1",
+				"SAT_RUNNABLE_IDENT":            "ident52",
+				"SAT_RUNNABLE_VERSION":          "v9.5.4",
 				"SAT_TRACER_SERVICENAME":        "service 543",
 				"SAT_TRACER_PROBABILITY":        "0.2254332",
 				"SAT_TRACER_COLLECTOR_ENDPOINT": "localhost:4325",
@@ -32,12 +34,12 @@ func TestResolve(t *testing.T) {
 				"SAT_TRACER_HONEYCOMB_DATASET":  "hcdataset",
 			},
 			want: Options{
-				EnvToken: "envtoken",
-				Port:     "1234",
-				ProcUUID: "63147f8b-cd25-4eba-acc2-6ff48e6970b6",
-				ControlPlane: &ControlPlane{
-					Address: "https://localhost:9091",
-				},
+				EnvToken:     "envtoken",
+				Port:         "1234",
+				ProcUUID:     "63147f8b-cd25-4eba-acc2-6ff48e6970b6",
+				ControlPlane: &ControlPlane{Address: "https://localhost:9091"},
+				Ident:        &Ident{Data: "ident52"},
+				Version:      &Version{Data: "v9.5.4"},
 				TracerConfig: TracerConfig{
 					TracerType:  "custom1",
 					ServiceName: "service 543",

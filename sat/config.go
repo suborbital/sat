@@ -79,7 +79,13 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	}
 
 	// first, determine if we need to connect to a control plane
-	controlPlane, useControlPlane := os.LookupEnv("SAT_CONTROL_PLANE")
+	controlPlane := ""
+	useControlPlane := false
+	if opts.ControlPlane != nil {
+		controlPlane = opts.ControlPlane.Address
+		useControlPlane = true
+	}
+
 	appClient := appsource.NewHTTPSource(controlPlane)
 	caps := rcap.DefaultConfigWithLogger(logger)
 
@@ -126,11 +132,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		}
 
 		if diskRunnable != nil {
-			ident, iExists := os.LookupEnv("SAT_RUNNABLE_IDENT")
-			version, vExists := os.LookupEnv("SAT_RUNNABLE_VERSION")
-			if iExists && vExists {
-				FQFN := fqfn.FromParts(ident, runnable.Namespace, runnable.Name, version)
-				runnable.FQFN = FQFN
+			if opts.Ident != nil && opts.Version != nil {
+				runnable.FQFN = fqfn.FromParts(opts.Ident.Data, runnable.Namespace, runnable.Name, opts.Version.Data)
 			}
 		}
 

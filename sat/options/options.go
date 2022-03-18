@@ -17,11 +17,21 @@ type Options struct {
 	ProcUUID procUUID `env:"SAT_UUID"`
 
 	ControlPlane *ControlPlane `env:",noinit"`
+	Ident        *Ident        `env:",noinit"`
+	Version      *Version      `env:",noinit"`
 	TracerConfig TracerConfig  `env:",prefix=SAT_TRACER_"`
 }
 
 type ControlPlane struct {
 	Address string `env:"SAT_CONTROL_PLANE"`
+}
+
+type Ident struct {
+	Data string `env:"SAT_RUNNABLE_IDENT"`
+}
+
+type Version struct {
+	Data string `env:"SAT_RUNNABLE_VERSION"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
