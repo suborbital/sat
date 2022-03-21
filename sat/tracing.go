@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
-	traceProviders "go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,8 +22,8 @@ import (
 	"github.com/suborbital/sat/sat/options"
 )
 
-// setupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
-func setupTracing(config options.TracerConfig, logger *vlog.Logger) (traceProviders.TracerProvider, error) {
+// SetupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
+func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.TracerProvider, error) {
 	exporterString := "none"
 	exporterOpts := make([]otlptracegrpc.Option, 0)
 
@@ -34,7 +33,7 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (traceProvid
 
 		honeyOpts, err := honeycombExporterOptions(config.HoneycombConfig)
 		if err != nil {
-			return traceProviders.NewNoopTracerProvider(), errors.Wrap(err, "honeycombExporterOptions")
+			return nil, errors.Wrap(err, "honeycombExporterOptions")
 		}
 
 		exporterString = "honeycomb"
@@ -46,7 +45,7 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (traceProvid
 
 		collectorOpts, err := collectorExporterOptions(config.Collector)
 		if err != nil {
-			return traceProviders.NewNoopTracerProvider(), errors.Wrap(err, "collectorExporterOptions")
+			return nil, errors.Wrap(err, "collectorExporterOptions")
 		}
 
 		exporterString = "collector"
@@ -57,12 +56,14 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (traceProvid
 		logger.Warn(fmt.Sprintf("unrecognised tracer type configuration [%s]. Defaulting to no tracer", config.TracerType))
 		fallthrough
 	case "none", "":
-		tp := traceProviders.NewNoopTracerProvider()
-		otel.SetTracerProvider(tp)
+		// Create the most default trace provider and escape early.
+		traceProvider := trace.NewTracerProvider(nil)
 
-		logger.Info("finished setting up noop tracer")
+		otel.SetTracerProvider(traceProvider)
 
-		return tp, nil
+		logger.Info("finished setting up default noop tracer")
+
+		return traceProvider, nil
 	}
 
 	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(exporterOpts...))

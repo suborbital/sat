@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/grav/discovery/local"
@@ -30,13 +31,14 @@ const (
 type Sat struct {
 	j string // the job name / FQFN
 
-	c *Config
-	v *vk.Server
-	g *grav.Grav
-	p *grav.Pod
-	t *websocket.Transport
-	e *executor.Executor
-	l *vlog.Logger
+	c      *Config
+	v      *vk.Server
+	g      *grav.Grav
+	p      *grav.Pod
+	t      *websocket.Transport
+	e      *executor.Executor
+	l      *vlog.Logger
+	tracer trace.TracerProvider
 }
 
 type loggerScope struct {
@@ -48,7 +50,7 @@ var headless = false
 
 // New initializes Reactr, Vektor, and Grav in a Sat instance
 // if config.UseStdin is true, only Reactr will be created
-func New(config *Config) (*Sat, error) {
+func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 	wruntime.UseInternalLogger(config.Logger)
 
 	exec := executor.NewWithGrav(config.Logger, nil)
@@ -74,11 +76,12 @@ func New(config *Config) (*Sat, error) {
 	}
 
 	sat := &Sat{
-		c: config,
-		j: config.JobType,
-		e: exec,
-		t: websocket.New(),
-		l: config.Logger,
+		c:      config,
+		j:      config.JobType,
+		e:      exec,
+		t:      websocket.New(),
+		l:      config.Logger,
+		tracer: traceProvider,
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here

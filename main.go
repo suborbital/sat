@@ -30,8 +30,16 @@ func main() {
 const shutdownTimeoutSeconds = 3
 
 func run(conf *sat.Config) error {
+	localLogger := conf.Logger.CreateScoped("main.run")
+
+	traceProvider, err := sat.SetupTracing(conf.TracerConfig, conf.Logger)
+	if err != nil {
+		return errors.Wrap(err, "setup tracing")
+	}
+	defer traceProvider.Shutdown(context.Background())
+
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
-	s, err := sat.New(conf)
+	s, err := sat.New(conf, traceProvider)
 	if err != nil {
 		return errors.Wrap(err, "sat.New")
 	}
@@ -42,8 +50,6 @@ func run(conf *sat.Config) error {
 		}
 		return nil
 	}
-
-	localLogger := conf.Logger.CreateScoped("main.run")
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS. Use a buffered channel because the
 	// signal package requires it.
