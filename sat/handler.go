@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	// company packages.
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
@@ -24,8 +23,8 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 
 		result, err := exec.Do(s.j, req, ctx, nil)
 		if err != nil {
-			if !errors.As(err, runErr) {
-				s.l.Error(errors.Wrap(err, "failed to exec.Do"))
+			if !errors.As(err, &runErr) {
+				s.l.Error(errors.Wrap(runErr, "failed to exec.Do"))
 				return nil, vk.E(http.StatusInternalServerError, "unknown error")
 			}
 		} else if result == nil {

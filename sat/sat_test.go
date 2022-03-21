@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"syscall"
 	"testing"
 	"time"
 
@@ -24,7 +23,6 @@ func TestEchoRequest(t *testing.T) {
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
-	defer sat.Shutdown(ctx, syscall.SIGTERM)
 
 	vt := vtest.New(sat.testServer())
 
@@ -45,7 +43,6 @@ func Test405Request(t *testing.T) {
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
-	defer sat.Shutdown(ctx, syscall.SIGTERM)
 
 	vt := vtest.New(sat.testServer())
 
@@ -67,7 +64,6 @@ func TestErrorRequest(t *testing.T) {
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
-	defer sat.Shutdown(ctx, syscall.SIGTERM)
 
 	vt := vtest.New(sat.testServer())
 
@@ -88,7 +84,6 @@ func TestPanicRequest(t *testing.T) {
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
-	defer sat.Shutdown(ctx, syscall.SIGTERM)
 
 	vt := vtest.New(sat.testServer())
 
