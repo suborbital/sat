@@ -80,7 +80,7 @@ func run(conf *sat.Config) error {
 
 	// Blocking main and waiting for shutdown.
 	select {
-	case err := <-serverErrors:
+	case err = <-serverErrors:
 		return fmt.Errorf("server error: %w", err)
 
 	case sig := <-shutdown:
