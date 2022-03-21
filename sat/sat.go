@@ -1,13 +1,14 @@
 package sat
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/pkg/errors"
 
-	// company packages.
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -104,15 +105,11 @@ func New(config *Config) (*Sat, error) {
 // Start starts Sat's Vektor server and Grav discovery
 func (s *Sat) Start() error {
 	// start Vektor first so that the server is started up before Grav starts discovery
-	go func() {
-		if err := s.v.Start(); err != nil {
-			if err == http.ErrServerClosed {
-				// that's fine, do nothing
-			} else {
-				log.Fatal(errors.Wrap(err, "failed to Start server"))
-			}
+	if err := s.v.Start(); err != nil {
+		if !errors.Is(err, http.ErrServerClosed) {
+			return errors.Wrap(err, "failed to start server")
 		}
-	}()
+	}
 
 	// configure Grav to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
@@ -131,24 +128,48 @@ func (s *Sat) Start() error {
 	s.e.UseGrav(s.g)
 
 	if err := s.e.ListenAndRun(s.c.JobType, s.handleFnResult); err != nil {
-		log.Fatal(errors.Wrap(err, "executor.ListenAndRun"))
+		return errors.Wrap(err, "executor.ListenAndRun")
 	}
 
 	if err := connectStaticPeers(s.c.Logger, s.g); err != nil {
-		log.Fatal(errors.Wrap(err, "failed to connectStaticPeers"))
+		return errors.Wrap(err, "failed to connectStaticPeers")
 	}
 
 	// write a file to disk which describes this instance
 	info := process.NewInfo(s.c.Port, s.c.JobType)
 	if err := info.Write(s.c.ProcUUID); err != nil {
-		log.Fatal(errors.Wrap(err, "failed to Write process info"))
+		return errors.Wrap(err, "failed to Write process info")
 	}
 
-	shutdownChan := make(chan error)
+	return nil
+}
 
-	s.setupSignals(shutdownChan)
+func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
+	s.l.Warn("encountered signal, beginning shutdown:", sig.String())
 
-	return <-shutdownChan
+	// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
+	// s.v.Stop isn't called until all connections are ready to close (after said delay)
+	// this is needed to ensure a safe withdraw from the constellation/mesh
+	if err := s.g.Withdraw(); err != nil {
+		s.l.Warn("encountered error during Withdraw, will proceed:", err.Error())
+	}
+
+	time.Sleep(time.Second * 3)
+
+	if err := s.g.Stop(); err != nil {
+		s.l.Warn("encountered error during Stop, will proceed:", err.Error())
+	}
+
+	if err := process.Delete(s.c.ProcUUID); err != nil {
+		s.l.Warn("encountered error during process.Delete, will proceed:", err.Error())
+	}
+
+	if err := s.v.StopCtx(ctx); err != nil {
+		return errors.Wrap(err, "sat.vektor.StopCtx")
+	}
+
+	s.l.Warn("handled signal, continuing shutdown", sig.String())
+	return nil
 }
 
 // testStart returns Sat's internal server for testing purposes
