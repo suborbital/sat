@@ -106,9 +106,6 @@ func satForFile(filepath string) (*Sat, *trace.TracerProvider, error) {
 		return nil, nil, err
 	}
 
-	fmt.Printf("tracer\n\n\n%#v\n\n\n", config.TracerConfig)
-	fmt.Printf("logger\n\n\n%#v\n\n\n", config.Logger)
-
 	traceProvider, err := SetupTracing(config.TracerConfig, config.Logger)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "setup tracing")
