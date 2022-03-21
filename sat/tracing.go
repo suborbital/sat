@@ -57,7 +57,7 @@ func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.Trac
 		fallthrough
 	case "none", "":
 		// Create the most default trace provider and escape early.
-		traceProvider := trace.NewTracerProvider(nil)
+		traceProvider := trace.NewTracerProvider()
 
 		otel.SetTracerProvider(traceProvider)
 
