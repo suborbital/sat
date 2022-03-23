@@ -107,12 +107,14 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 
 // Start starts Sat's Vektor server and Grav discovery
 func (s *Sat) Start() error {
+	vektorError := make(chan error, 1)
+
 	// start Vektor first so that the server is started up before Grav starts discovery
-	if err := s.v.Start(); err != nil {
-		if !errors.Is(err, http.ErrServerClosed) {
-			return errors.Wrap(err, "failed to start server")
+	go func() {
+		if err := s.v.Start(); err != nil {
+			vektorError <- err
 		}
-	}
+	}()
 
 	// configure Grav to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
@@ -142,6 +144,13 @@ func (s *Sat) Start() error {
 	info := process.NewInfo(s.c.Port, s.c.JobType)
 	if err := info.Write(s.c.ProcUUID); err != nil {
 		return errors.Wrap(err, "failed to Write process info")
+	}
+
+	select {
+	case err := <-vektorError:
+		if !errors.Is(err, http.ErrServerClosed) {
+			return errors.Wrap(err, "failed to start server")
+		}
 	}
 
 	return nil
