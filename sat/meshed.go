@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/request"
@@ -25,6 +28,13 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	ctx := vk.NewCtx(s.l, nil, nil)
 	ctx.UseRequestID(req.ID)
 	ctx.UseScope(loggerScope{req.ID})
+
+	spanCtx, span := s.tracer.Start(ctx.Context, "handleFnResult", trace.WithAttributes(
+		attribute.String("request_id", ctx.RequestID()),
+	))
+	defer span.End()
+
+	ctx.Context = spanCtx
 
 	seq, err := sequence.FromJSON(req.SequenceJSON, req, s.e, ctx)
 	if err != nil {
@@ -104,6 +114,9 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 }
 
 func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
+	span := trace.SpanFromContext(ctx.Context)
+	defer span.End()
+
 	fnrJSON, err := json.Marshal(result)
 	if err != nil {
 		return errors.Wrap(err, "failed to Marshal function result")
@@ -120,7 +133,10 @@ func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
 	return nil
 }
 
-func (s *Sat) sendNextStep(msg grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx *vk.Ctx) {
+func (s *Sat) sendNextStep(_ grav.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx *vk.Ctx) {
+	span := trace.SpanFromContext(ctx.Context)
+	defer span.End()
+
 	nextStep := seq.NextStep()
 	if nextStep == nil {
 		ctx.Log.Debug("sequence completed, no nextStep message to send")
