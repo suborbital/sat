@@ -61,7 +61,7 @@ func run(conf *sat.Config) error {
 	serverErrors := make(chan error, 1)
 
 	go func() {
-		localLogger.Info("startup", "sat with configured vektor, grav, reactr started")
+		localLogger.Info("startup", "sat started")
 		serverErrors <- s.Start()
 	}()
 
