@@ -82,7 +82,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 		}(),
 	}
 
-	if err := s.sendFnResult(fnr, ctx); err != nil {
+	if err = s.sendFnResult(fnr, ctx); err != nil {
 		ctx.Log.Error(errors.Wrap(err, "failed to sendFnResult"))
 		return
 	}
@@ -93,7 +93,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 		return
 	}
 
-	if err := seq.HandleStepErrs([]sequence.FnResult{*fnr}, step.Exec); err != nil {
+	if err = seq.HandleStepErrs([]sequence.FnResult{*fnr}, step.Exec); err != nil {
 		ctx.Log.Error(err)
 		return
 	}
