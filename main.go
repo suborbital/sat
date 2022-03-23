@@ -68,7 +68,7 @@ func run(conf *sat.Config) error {
 	// start scanning for our procfile being deleted
 	go func() {
 		for {
-			if _, err := process.Find(conf.ProcUUID); err != nil {
+			if _, err = process.Find(conf.ProcUUID); err != nil {
 				localLogger.Warn("proc file deleted, sending termination signal")
 				shutdown <- syscall.SIGTERM
 				break
