@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/reactr/request"
@@ -13,6 +15,13 @@ import (
 
 func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
+		spanCtx, span := s.tracer.Start(ctx.Context, "vkhandler", trace.WithAttributes(
+			attribute.String("request_id", ctx.RequestID()),
+		))
+		defer span.End()
+
+		ctx.Context = spanCtx
+
 		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to FromVKRequest"))

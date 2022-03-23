@@ -38,7 +38,7 @@ type Sat struct {
 	t      *websocket.Transport
 	e      *executor.Executor
 	l      *vlog.Logger
-	tracer trace.TracerProvider
+	tracer trace.Tracer
 }
 
 type loggerScope struct {
@@ -81,7 +81,7 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		e:      exec,
 		t:      websocket.New(),
 		l:      config.Logger,
-		tracer: traceProvider,
+		tracer: traceProvider.Tracer("sat"),
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
