@@ -27,6 +27,7 @@ func main() {
 			conf.Logger.Error(errors.Wrap(err, "startup in StdIn"))
 			os.Exit(1)
 		}
+		os.Exit(0)
 	}
 
 	if err = run(conf); err != nil {
