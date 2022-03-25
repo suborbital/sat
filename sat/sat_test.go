@@ -2,20 +2,27 @@ package sat
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/sdk/trace"
+
 	"github.com/suborbital/vektor/vtest"
 )
 
 func TestEchoRequest(t *testing.T) {
-	sat, err := satForFile("../examples/hello-echo/hello-echo.wasm")
+	sat, tp, err := satForFile("../examples/hello-echo/hello-echo.wasm")
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to satForFile"))
 		return
 	}
+	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
+	defer ctxCloser()
+	defer tp.Shutdown(ctx)
 
 	vt := vtest.New(sat.testServer())
 
@@ -28,11 +35,14 @@ func TestEchoRequest(t *testing.T) {
 }
 
 func Test405Request(t *testing.T) {
-	sat, err := satForFile("../examples/hello-echo/hello-echo.wasm")
+	sat, tp, err := satForFile("../examples/hello-echo/hello-echo.wasm")
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to satForFile"))
 		return
 	}
+	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
+	defer ctxCloser()
+	defer tp.Shutdown(ctx)
 
 	vt := vtest.New(sat.testServer())
 
@@ -46,11 +56,14 @@ func Test405Request(t *testing.T) {
 }
 
 func TestErrorRequest(t *testing.T) {
-	sat, err := satForFile("../examples/return-err/return-err.wasm")
+	sat, tp, err := satForFile("../examples/return-err/return-err.wasm")
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to satForFile"))
 		return
 	}
+	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
+	defer ctxCloser()
+	defer tp.Shutdown(ctx)
 
 	vt := vtest.New(sat.testServer())
 
@@ -63,11 +76,14 @@ func TestErrorRequest(t *testing.T) {
 }
 
 func TestPanicRequest(t *testing.T) {
-	sat, err := satForFile("../examples/panic-at-the-disco/panic-at-the-disco.wasm")
+	sat, tp, err := satForFile("../examples/panic-at-the-disco/panic-at-the-disco.wasm")
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to satForFile"))
 		return
 	}
+	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
+	defer ctxCloser()
+	defer tp.Shutdown(ctx)
 
 	vt := vtest.New(sat.testServer())
 
@@ -79,16 +95,21 @@ func TestPanicRequest(t *testing.T) {
 	resp.AssertBodyString(`{"status":500,"message":"unknown error"}`)
 }
 
-func satForFile(filepath string) (*Sat, error) {
+func satForFile(filepath string) (*Sat, *trace.TracerProvider, error) {
 	config, err := ConfigFromRunnableArg(filepath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	sat, err := New(config)
+	traceProvider, err := SetupTracing(config.TracerConfig, config.Logger)
 	if err != nil {
-		return nil, err
+		return nil, nil, errors.Wrap(err, "setup tracing")
 	}
 
-	return sat, nil
+	sat, err := New(config, traceProvider)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return sat, traceProvider, nil
 }

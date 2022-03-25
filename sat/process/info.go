@@ -43,12 +43,12 @@ func Find(uuid string) (*Info, error) {
 		return nil, errors.Wrap(err, "failed to ReadFile")
 	}
 
-	info := &Info{}
-	if err := json.Unmarshal(infoBytes, info); err != nil {
+	var info Info
+	if err = json.Unmarshal(infoBytes, &info); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal")
 	}
 
-	return info, nil
+	return &info, nil
 }
 
 // Delete deletes the process file with the given UUID if it exists
@@ -60,12 +60,12 @@ func Delete(uuid string) error {
 
 	filePath := filepath.Join(dir, fmt.Sprintf("%s.json", uuid))
 
-	if _, err := os.Stat(filePath); err != nil {
+	if _, err = os.Stat(filePath); err != nil {
 		// nothing to do
 		return nil
 	}
 
-	if err := os.Remove(filePath); err != nil {
+	if err = os.Remove(filePath); err != nil {
 		return errors.Wrap(err, "failed to Remove")
 	}
 
@@ -86,7 +86,7 @@ func (p *Info) Write(uuid string) error {
 
 	filePath := filepath.Join(dir, fmt.Sprintf("%s.json", uuid))
 
-	if err := os.WriteFile(filePath, processJSON, 0755); err != nil {
+	if err = os.WriteFile(filePath, processJSON, 0755); err != nil {
 		return errors.Wrap(err, "failed to WriteFile")
 	}
 
@@ -102,7 +102,7 @@ func processInfoDir() (string, error) {
 
 	dir := filepath.Join(config, "suborbital", "proc")
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err = os.MkdirAll(dir, 0755); err != nil {
 		return "", errors.Wrap(err, "failed to MkdirAll")
 	}
 
