@@ -10,25 +10,34 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/sat/sat"
 	"github.com/suborbital/sat/sat/process"
 )
 
 func main() {
-	config, err := sat.ConfigFromArgs()
+	conf, err := sat.ConfigFromArgs()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = run(config); err != nil {
-		config.Logger.Error(errors.Wrap(err, "startup"))
+	if conf.UseStdin {
+		if err = runStdIn(conf); err != nil {
+			conf.Logger.Error(errors.Wrap(err, "startup in StdIn"))
+			os.Exit(1)
+		}
+	}
+
+	if err = run(conf); err != nil {
+		conf.Logger.Error(errors.Wrap(err, "startup"))
 		os.Exit(1)
 	}
 }
 
 const shutdownTimeoutSeconds = 3
 
+// run is called if sat is started up with StdIn mode set to false.
 func run(conf *sat.Config) error {
 	localLogger := conf.Logger.CreateScoped("main.run")
 
@@ -42,13 +51,6 @@ func run(conf *sat.Config) error {
 	s, err := sat.New(conf, traceProvider)
 	if err != nil {
 		return errors.Wrap(err, "sat.New")
-	}
-
-	if conf.UseStdin {
-		if err = s.ExecFromStdin(); err != nil {
-			return errors.Wrap(err, "sat.ExecFromStdin")
-		}
-		return nil
 	}
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS. Use a buffered channel because the
@@ -97,5 +99,21 @@ func run(conf *sat.Config) error {
 		}
 	}
 
+	return nil
+}
+
+// runStdIn will be called if sat is started up with conf.UseStdin set to true.
+func runStdIn(conf *sat.Config) error {
+	noopTracer := trace.NewNoopTracerProvider()
+
+	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
+	s, err := sat.New(conf, noopTracer)
+	if err != nil {
+		return errors.Wrap(err, "sat.New")
+	}
+
+	if err = s.ExecFromStdin(); err != nil {
+		return errors.Wrap(err, "sat.ExecFromStdin")
+	}
 	return nil
 }
