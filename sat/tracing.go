@@ -61,7 +61,7 @@ func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.Trac
 
 		otel.SetTracerProvider(traceProvider)
 
-		logger.Info("finished setting up default noop tracer")
+		logger.Debug("finished setting up default noop tracer")
 
 		return traceProvider, nil
 	}

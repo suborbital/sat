@@ -75,10 +75,15 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		return nil, errors.Wrap(err, "exec.Register")
 	}
 
+	var transport *websocket.Transport
+	if config.ControlPlaneUrl != "" {
+		transport = websocket.New()
+	}
+
 	sat := &Sat{
 		jobName:   config.JobType,
 		config:    config,
-		transport: websocket.New(),
+		transport: transport,
 		exec:      exec,
 		log:       config.Logger,
 		tracer:    traceProvider.Tracer("sat"),
@@ -98,9 +103,19 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		vk.UseQuietRoutes("/meta/metrics"),
 	)
 
-	sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
-	sat.vektor.GET("/meta/metrics", sat.metricsHandler())
-	sat.vektor.POST("/*any", sat.handler(exec))
+	// if a transport is configured, enable grav and metrics endpoints, otherwise enable server mode
+	if sat.transport != nil {
+		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
+		sat.vektor.GET("/meta/metrics", sat.metricsHandler())
+	} else {
+		// allow any HTTP method
+		sat.vektor.GET("/*any", sat.handler(exec))
+		sat.vektor.POST("/*any", sat.handler(exec))
+		sat.vektor.PATCH("/*any", sat.handler(exec))
+		sat.vektor.DELETE("/*any", sat.handler(exec))
+		sat.vektor.HEAD("/*any", sat.handler(exec))
+		sat.vektor.OPTIONS("/*any", sat.handler(exec))
+	}
 
 	return sat, nil
 }
@@ -116,34 +131,30 @@ func (s *Sat) Start() error {
 		}
 	}()
 
-	// configure Grav to join the mesh for its appropriate application
-	// and broadcast its "interest" (i.e. the loaded function)
-	s.grav = grav.New(
-		grav.UseBelongsTo(s.config.Identifier),
-		grav.UseInterests(s.config.JobType),
-		grav.UseLogger(s.config.Logger),
-		grav.UseTransport(s.transport),
-		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
-	)
+	if s.transport != nil {
+		// configure Grav to join the mesh for its appropriate application
+		// and broadcast its "interest" (i.e. the loaded function)
+		s.grav = grav.New(
+			grav.UseBelongsTo(s.config.Identifier),
+			grav.UseInterests(s.config.JobType),
+			grav.UseLogger(s.config.Logger),
+			grav.UseTransport(s.transport),
+			grav.UseDiscovery(local.New()),
+			grav.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
+		)
 
-	s.pod = s.grav.Connect()
+		s.pod = s.grav.Connect()
 
-	// set up the Executor to listen for jobs and handle them
-	s.exec.UseGrav(s.grav)
+		// set up the Executor to listen for jobs and handle them
+		s.exec.UseGrav(s.grav)
 
-	if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
-		return errors.Wrap(err, "executor.ListenAndRun")
-	}
+		if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
+			return errors.Wrap(err, "executor.ListenAndRun")
+		}
 
-	if err := connectStaticPeers(s.config.Logger, s.grav); err != nil {
-		return errors.Wrap(err, "failed to connectStaticPeers")
-	}
-
-	// write a file to disk which describes this instance
-	info := process.NewInfo(s.config.Port, s.config.JobType)
-	if err := info.Write(s.config.ProcUUID); err != nil {
-		return errors.Wrap(err, "failed to Write process info")
+		if err := connectStaticPeers(s.config.Logger, s.grav); err != nil {
+			return errors.Wrap(err, "failed to connectStaticPeers")
+		}
 	}
 
 	select {
@@ -157,19 +168,20 @@ func (s *Sat) Start() error {
 }
 
 func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
-	s.log.Warn("encountered signal, beginning shutdown:", sig.String())
-
 	// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
 	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
-	if err := s.grav.Withdraw(); err != nil {
-		s.log.Warn("encountered error during Withdraw, will proceed:", err.Error())
-	}
 
-	time.Sleep(time.Second * 3)
+	if s.transport != nil {
+		if err := s.grav.Withdraw(); err != nil {
+			s.log.Warn("encountered error during Withdraw, will proceed:", err.Error())
+		}
 
-	if err := s.grav.Stop(); err != nil {
-		s.log.Warn("encountered error during Stop, will proceed:", err.Error())
+		time.Sleep(time.Second * 3)
+
+		if err := s.grav.Stop(); err != nil {
+			s.log.Warn("encountered error during Stop, will proceed:", err.Error())
+		}
 	}
 
 	if err := process.Delete(s.config.ProcUUID); err != nil {
