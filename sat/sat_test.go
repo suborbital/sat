@@ -3,7 +3,6 @@ package sat
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -34,7 +33,7 @@ func TestEchoRequest(t *testing.T) {
 	resp.AssertBodyString("hello my friend")
 }
 
-func Test405Request(t *testing.T) {
+func TestEchoGetRequest(t *testing.T) {
 	sat, tp, err := satForFile("../examples/hello-echo/hello-echo.wasm")
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to satForFile"))
@@ -46,13 +45,11 @@ func Test405Request(t *testing.T) {
 
 	vt := vtest.New(sat.testServer())
 
-	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(nil))
 
 	resp := vt.Do(req, t)
 
-	fmt.Println(string(resp.Body))
-
-	resp.AssertStatus(405)
+	resp.AssertStatus(200)
 }
 
 func TestErrorRequest(t *testing.T) {
