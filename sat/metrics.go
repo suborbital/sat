@@ -14,7 +14,7 @@ type MetricsResponse struct {
 
 func (s *Sat) metricsHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		metrics, err := s.e.Metrics()
+		metrics, err := s.exec.Metrics()
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to exec.Metrics"))
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")

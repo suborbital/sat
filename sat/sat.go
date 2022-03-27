@@ -29,16 +29,16 @@ const (
 
 // Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
-	j string // the job name / FQFN
+	jobName string // the job name / FQFN
 
-	c      *Config
-	v      *vk.Server
-	g      *grav.Grav
-	p      *grav.Pod
-	t      *websocket.Transport
-	e      *executor.Executor
-	l      *vlog.Logger
-	tracer trace.Tracer
+	config    *Config
+	vektor    *vk.Server
+	grav      *grav.Grav
+	pod       *grav.Pod
+	transport *websocket.Transport
+	exec      *executor.Executor
+	log       *vlog.Logger
+	tracer    trace.Tracer
 }
 
 type loggerScope struct {
@@ -76,12 +76,12 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 	}
 
 	sat := &Sat{
-		c:      config,
-		j:      config.JobType,
-		e:      exec,
-		t:      websocket.New(),
-		l:      config.Logger,
-		tracer: traceProvider.Tracer("sat"),
+		jobName:   config.JobType,
+		config:    config,
+		transport: websocket.New(),
+		exec:      exec,
+		log:       config.Logger,
+		tracer:    traceProvider.Tracer("sat"),
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
@@ -90,7 +90,7 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 	}
 
 	// Grav and Vektor will be started on call to s.Start()
-	sat.v = vk.New(
+	sat.vektor = vk.New(
 		vk.UseLogger(config.Logger),
 		vk.UseAppName(config.PrettyName),
 		vk.UseHTTPPort(config.Port),
@@ -98,9 +98,9 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		vk.UseQuietRoutes("/meta/metrics"),
 	)
 
-	sat.v.HandleHTTP(http.MethodGet, "/meta/message", sat.t.HTTPHandlerFunc())
-	sat.v.GET("/meta/metrics", sat.metricsHandler())
-	sat.v.POST("/*any", sat.handler(exec))
+	sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
+	sat.vektor.GET("/meta/metrics", sat.metricsHandler())
+	sat.vektor.POST("/*any", sat.handler(exec))
 
 	return sat, nil
 }
@@ -111,38 +111,38 @@ func (s *Sat) Start() error {
 
 	// start Vektor first so that the server is started up before Grav starts discovery
 	go func() {
-		if err := s.v.Start(); err != nil {
+		if err := s.vektor.Start(); err != nil {
 			vektorError <- err
 		}
 	}()
 
 	// configure Grav to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
-	s.g = grav.New(
-		grav.UseBelongsTo(s.c.Identifier),
-		grav.UseInterests(s.c.JobType),
-		grav.UseLogger(s.c.Logger),
-		grav.UseTransport(s.t),
+	s.grav = grav.New(
+		grav.UseBelongsTo(s.config.Identifier),
+		grav.UseInterests(s.config.JobType),
+		grav.UseLogger(s.config.Logger),
+		grav.UseTransport(s.transport),
 		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(fmt.Sprintf("%d", s.c.Port), "/meta/message"),
+		grav.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
 	)
 
-	s.p = s.g.Connect()
+	s.pod = s.grav.Connect()
 
 	// set up the Executor to listen for jobs and handle them
-	s.e.UseGrav(s.g)
+	s.exec.UseGrav(s.grav)
 
-	if err := s.e.ListenAndRun(s.c.JobType, s.handleFnResult); err != nil {
+	if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
 		return errors.Wrap(err, "executor.ListenAndRun")
 	}
 
-	if err := connectStaticPeers(s.c.Logger, s.g); err != nil {
+	if err := connectStaticPeers(s.config.Logger, s.grav); err != nil {
 		return errors.Wrap(err, "failed to connectStaticPeers")
 	}
 
 	// write a file to disk which describes this instance
-	info := process.NewInfo(s.c.Port, s.c.JobType)
-	if err := info.Write(s.c.ProcUUID); err != nil {
+	info := process.NewInfo(s.config.Port, s.config.JobType)
+	if err := info.Write(s.config.ProcUUID); err != nil {
 		return errors.Wrap(err, "failed to Write process info")
 	}
 
@@ -157,34 +157,34 @@ func (s *Sat) Start() error {
 }
 
 func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
-	s.l.Warn("encountered signal, beginning shutdown:", sig.String())
+	s.log.Warn("encountered signal, beginning shutdown:", sig.String())
 
 	// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
-	// s.v.Stop isn't called until all connections are ready to close (after said delay)
+	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
-	if err := s.g.Withdraw(); err != nil {
-		s.l.Warn("encountered error during Withdraw, will proceed:", err.Error())
+	if err := s.grav.Withdraw(); err != nil {
+		s.log.Warn("encountered error during Withdraw, will proceed:", err.Error())
 	}
 
 	time.Sleep(time.Second * 3)
 
-	if err := s.g.Stop(); err != nil {
-		s.l.Warn("encountered error during Stop, will proceed:", err.Error())
+	if err := s.grav.Stop(); err != nil {
+		s.log.Warn("encountered error during Stop, will proceed:", err.Error())
 	}
 
-	if err := process.Delete(s.c.ProcUUID); err != nil {
-		s.l.Warn("encountered error during process.Delete, will proceed:", err.Error())
+	if err := process.Delete(s.config.ProcUUID); err != nil {
+		s.log.Warn("encountered error during process.Delete, will proceed:", err.Error())
 	}
 
-	if err := s.v.StopCtx(ctx); err != nil {
+	if err := s.vektor.StopCtx(ctx); err != nil {
 		return errors.Wrap(err, "sat.vektor.StopCtx")
 	}
 
-	s.l.Warn("handled signal, continuing shutdown", sig.String())
+	s.log.Warn("handled signal, continuing shutdown", sig.String())
 	return nil
 }
 
 // testStart returns Sat's internal server for testing purposes
 func (s *Sat) testServer() *vk.Server {
-	return s.v
+	return s.vektor
 }
