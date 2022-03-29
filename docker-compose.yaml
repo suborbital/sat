@@ -37,3 +37,11 @@ services:
     volumes:
       - ./otel-config.yaml:/etc/otel/config.yaml:ro
       - ./traces.json:/traces.json:rw
+
+  linter:
+    container_name: "sat_linter"
+    build:
+      context: .
+      dockerfile: ./ops/Dockerfile-golangci
+    volumes:
+      - ./:/tmp/linttime

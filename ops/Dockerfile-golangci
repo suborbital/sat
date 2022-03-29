@@ -1,0 +1,8 @@
+FROM golang:1.17
+
+RUN ["go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2"]
+
+RUN mkdir -p /tmp/linttime
+WORKDIR /tmp/linttime
+
+CMD ["golangci-lint", "run",  "./..."]
