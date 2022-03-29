@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	// company packages.
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
 	aopts "github.com/suborbital/atmo/atmo/options"

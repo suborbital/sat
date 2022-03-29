@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	// company packages.
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vk"
 )

@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	// company packages.
 	"github.com/suborbital/atmo/directive"
 
 	"github.com/suborbital/sat/constd/config"
