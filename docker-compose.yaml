@@ -56,7 +56,7 @@ services:
       - .:/app:rw
       - vendor:/app/vendor/
     working_dir: /app
-    command: sh ./ops/gci.sh
+    command: ./ops/gci.sh
 #    entrypoint: "/bin/bash -c"
 #    command: echo $SHELL
 #    command: 'gci write -s Standard -s Default -s "Prefix(github.com/suborbital)" -s "Prefix(github.com/suborbital/sat)" --NoInlineComments --NoPrefixComments main.go ./sat/**/*.go'
