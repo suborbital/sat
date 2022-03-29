@@ -1,0 +1,7 @@
+FROM golang:1.17
+
+RUN ["go",  "install", "github.com/daixiang0/gci@v0.3.3"]
+
+SHELL ["/bin/bash", "-c"]
+
+CMD ["gci"]

@@ -67,4 +67,7 @@ constd/metal/otel/collector: constd
 lint:
 	docker compose up linter
 
+importfix:
+	docker compose up lintfixer
+
 .PHONY: sat constd
