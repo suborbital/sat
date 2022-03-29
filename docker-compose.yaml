@@ -58,7 +58,7 @@ services:
     working_dir: /app
 #    command: echo $SHELL
 #    command: ls -la
-    command:  ["bash", "-c", "gci write -s Standard -s Default -s \"Prefix(github.com/suborbital)\" -s \"Prefix(github.com/suborbital/sat)\" --NoInlineComments --NoPrefixComments main.go ./sat/**/*.go ./constd/**/*.go"]
+    command:  ["bash", "-c", "--", 'gci write -s Standard -s Default -s "Prefix(github.com/suborbital)" -s "Prefix(github.com/suborbital/sat)" --NoInlineComments --NoPrefixComments main.go ./sat/**/*.go ./constd/**/*.go']
 
 volumes:
   vendor:
