@@ -40,8 +40,12 @@ services:
 
   linter:
     container_name: "sat_linter"
-    build:
-      context: .
-      dockerfile: ./ops/Dockerfile-golangci
+    image: "golangci/golangci-lint:v1.45.2-alpine"
     volumes:
-      - ./:/tmp/linttime
+      - .:/app
+      - vendor:/app/vendor/
+    working_dir: /app
+    command: golangci-lint run ./...
+
+volumes:
+  vendor:
