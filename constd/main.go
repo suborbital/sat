@@ -57,7 +57,7 @@ func main() {
 			log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
 		}
 
-		if err := registerWithControlPlane(c.config); err != nil {
+		if err = registerWithControlPlane(c.config); err != nil {
 			log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
 		}
 
@@ -75,7 +75,7 @@ func main() {
 	}()
 
 	// assuming nothing above throws an error, this will block forever
-	for err := range errChan {
+	for err = range errChan {
 		log.Fatal(errors.Wrap(err, "encountered error"))
 	}
 }
