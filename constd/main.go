@@ -82,22 +82,24 @@ func main() {
 
 func (c *constd) reconcileAtmo(errChan chan error) {
 	report := c.atmo.report()
-	if report == nil {
-		c.logger.Info("launching atmo")
-
-		uuid, pid, err := exec.Run(
-			atmoCommand(c.config, atmoPort),
-			"ATMO_HTTP_PORT="+atmoPort,
-			"ATMO_CONTROL_PLANE="+c.config.ControlPlane,
-			"ATMO_ENV_TOKEN="+c.config.EnvToken,
-		)
-
-		if err != nil {
-			errChan <- errors.Wrap(err, "failed to Run Atmo")
-		}
-
-		c.atmo.add(atmoPort, uuid, pid)
+	if report != nil {
+		return
 	}
+
+	c.logger.Info("launching atmo")
+
+	uuid, pid, err := exec.Run(
+		atmoCommand(c.config, atmoPort),
+		"ATMO_HTTP_PORT="+atmoPort,
+		"ATMO_CONTROL_PLANE="+c.config.ControlPlane,
+		"ATMO_ENV_TOKEN="+c.config.EnvToken,
+	)
+
+	if err != nil {
+		errChan <- errors.Wrap(err, "failed to Run Atmo")
+	}
+
+	c.atmo.add(atmoPort, uuid, pid)
 }
 
 func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
