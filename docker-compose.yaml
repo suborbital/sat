@@ -53,12 +53,13 @@ services:
       context: .
       dockerfile: ./ops/Dockerfile-gci
     volumes:
-      - .:/app
+      - .:/app:rw
       - vendor:/app/vendor/
     working_dir: /app
+#    entrypoint: "/bin/bash -c"
 #    command: echo $SHELL
-#    command: ls -la
-    command:  ["bash", "-c", "--", 'gci write -s Standard -s Default -s "Prefix(github.com/suborbital)" -s "Prefix(github.com/suborbital/sat)" --NoInlineComments --NoPrefixComments main.go ./sat/**/*.go ./constd/**/*.go']
+#    command: 'gci write -s Standard -s Default -s "Prefix(github.com/suborbital)" -s "Prefix(github.com/suborbital/sat)" --NoInlineComments --NoPrefixComments main.go ./sat/**/*.go'
+    command:  ["/bin/bash", "-c", 'gci write -s Standard -s Default -s "Prefix(github.com/suborbital)" -s "Prefix(github.com/suborbital/sat)" --NoInlineComments --NoPrefixComments main.go ./sat/**/*.go ./constd/**/*.go']
 
 volumes:
   vendor:
