@@ -24,7 +24,7 @@ func (s *Sat) ExecFromStdin() error {
 
 	input := scanner.Bytes()
 
-	ctx := vk.NewCtx(s.l, nil, nil)
+	ctx := vk.NewCtx(s.logger, nil, nil)
 
 	// construct a fake HTTP request from the input
 	req := &request.CoordinatedRequest{
@@ -38,7 +38,7 @@ func (s *Sat) ExecFromStdin() error {
 		State:       map[string][]byte{},
 	}
 
-	result, err := s.e.Do(s.j, req, ctx, nil)
+	result, err := s.executor.Do(s.jobName, req, ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to exec")
 	}

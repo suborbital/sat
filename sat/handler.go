@@ -30,23 +30,23 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 
 		var runErr rt.RunErr
 
-		result, err := exec.Do(s.j, req, ctx, nil)
+		result, err := exec.Do(s.jobName, req, ctx, nil)
 		if err != nil {
 			if errors.As(err, &runErr) {
 				// runErr would be an actual error returned from a function
 				// should find a better way to determine if a RunErr is "non-nil"
 				if runErr.Code != 0 || runErr.Message != "" {
-					s.l.Debug("fn", s.j, "returned an error")
+					s.logger.Debug("fn", s.jobName, "returned an error")
 					return nil, vk.E(runErr.Code, runErr.Message)
 				}
 			}
 
-			s.l.Error(errors.Wrap(err, "failed to exec.Do"))
+			s.logger.Error(errors.Wrap(err, "failed to exec.Do"))
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
 		if result == nil {
-			s.l.Debug("fn", s.j, "returned a nil result")
+			s.logger.Debug("fn", s.jobName, "returned a nil result")
 			return nil, nil
 		}
 

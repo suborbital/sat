@@ -21,11 +21,11 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
 	if err != nil {
-		s.l.Error(errors.Wrap(err, "failed to request.FromJSON"))
+		s.logger.Error(errors.Wrap(err, "failed to request.FromJSON"))
 		return
 	}
 
-	ctx := vk.NewCtx(s.l, nil, nil)
+	ctx := vk.NewCtx(s.logger, nil, nil)
 	ctx.UseRequestID(req.ID)
 	ctx.UseScope(loggerScope{req.ID})
 
@@ -36,9 +36,9 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 
 	ctx.Context = spanCtx
 
-	seq, err := sequence.FromJSON(req.SequenceJSON, req, s.e, ctx)
+	seq, err := sequence.FromJSON(req.SequenceJSON, req, s.executor, ctx)
 	if err != nil {
-		s.l.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
+		s.logger.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
 		return
 	}
 
@@ -124,9 +124,9 @@ func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
 
 	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
 
-	ctx.Log.Info("function", s.j, "completed, sending result message", respMsg.UUID())
+	ctx.Log.Info("function", s.jobName, "completed, sending result message", respMsg.UUID())
 
-	if s.p.Send(respMsg) == nil {
+	if s.pod.Send(respMsg) == nil {
 		return errors.New("failed to Send fnResult")
 	}
 
@@ -153,7 +153,7 @@ func (s *Sat) sendNextStep(_ grav.Message, seq *sequence.Sequence, req *request.
 
 	ctx.Log.Info("sending next message", nextStep.Exec.FQFN, nextMsg.UUID())
 
-	if err := s.g.Tunnel(nextStep.Exec.FQFN, nextMsg); err != nil {
+	if err := s.grav.Tunnel(nextStep.Exec.FQFN, nextMsg); err != nil {
 		// nothing much we can do here
 		ctx.Log.Error(errors.Wrap(err, "failed to Tunnel nextMsg"))
 	}
