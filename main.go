@@ -41,7 +41,7 @@ const serverShutdownTimeoutSeconds = 4
 
 // run is called if sat is started up with StdIn mode set to false.
 func run(conf *sat.Config) error {
-	log := conf.Logger.CreateScoped("main.run")
+	logger := conf.Logger.CreateScoped("main.run")
 
 	traceProvider, err := sat.SetupTracing(conf.TracerConfig, conf.Logger)
 	if err != nil {
@@ -72,7 +72,12 @@ func run(conf *sat.Config) error {
 
 	// create and scan for our procfile
 	go func() {
-		serverErrors <- createAndScanProcFile(log, conf, shutdown)
+		if err := createProcFile(logger, conf); err != nil {
+			serverErrors <- err
+			return
+		}
+
+		go scanProcFile(logger, conf, shutdown)
 	}()
 
 	// block main and wait for shutdown or errors.
@@ -81,8 +86,8 @@ func run(conf *sat.Config) error {
 		return fmt.Errorf("server error: %w", err)
 
 	case sig := <-shutdown:
-		log.Info("shutdown started from signal", sig.String())
-		defer log.Info("shutdown completed from signal", sig.String())
+		logger.Info("shutdown started from signal", sig.String())
+		defer logger.Info("shutdown completed from signal", sig.String())
 
 		// Give outstanding requests a deadline for completion.
 		ctx, cancel := context.WithTimeout(context.Background(), serverShutdownTimeoutSeconds*time.Second)
@@ -113,13 +118,18 @@ func runStdIn(conf *sat.Config) error {
 	return nil
 }
 
-func createAndScanProcFile(log *vlog.Logger, conf *sat.Config, shutdown chan os.Signal) error {
+func createProcFile(log *vlog.Logger, conf *sat.Config) error {
 	// write a file to disk which describes this instance
 	info := process.NewInfo(conf.Port, conf.JobType)
 	if err := info.Write(conf.ProcUUID); err != nil {
 		return errors.Wrap(err, "failed to Write process info")
 	}
 
+	return nil
+}
+
+func scanProcFile(log *vlog.Logger, conf *sat.Config, shutdown chan os.Signal) error {
+	// continually look for the deletion of our procfile
 	for {
 		if _, err := process.Find(conf.ProcUUID); err != nil {
 			log.Warn("proc file deleted, sending termination signal")
