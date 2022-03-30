@@ -14,6 +14,7 @@ import (
 
 	"github.com/suborbital/sat/sat"
 	"github.com/suborbital/sat/sat/process"
+	"github.com/suborbital/vektor/vlog"
 )
 
 func main() {
@@ -36,16 +37,17 @@ func main() {
 	}
 }
 
-const shutdownTimeoutSeconds = 3
+const serverShutdownTimeoutSeconds = 4
 
 // run is called if sat is started up with StdIn mode set to false.
 func run(conf *sat.Config) error {
-	localLogger := conf.Logger.CreateScoped("main.run")
+	logger := conf.Logger.CreateScoped("main.run")
 
 	traceProvider, err := sat.SetupTracing(conf.TracerConfig, conf.Logger)
 	if err != nil {
 		return errors.Wrap(err, "setup tracing")
 	}
+
 	defer traceProvider.Shutdown(context.Background())
 
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
@@ -63,35 +65,32 @@ func run(conf *sat.Config) error {
 	// we don't collect this error.
 	serverErrors := make(chan error, 1)
 
+	// start sat and its internal reactr/vektor/grav
 	go func() {
-		localLogger.Info("startup", "sat started")
 		serverErrors <- s.Start()
 	}()
 
-	// start scanning for our procfile being deleted
+	// create and scan for our procfile
 	go func() {
-		for {
-			if _, err = process.Find(conf.ProcUUID); err != nil {
-				localLogger.Warn("proc file deleted, sending termination signal")
-				shutdown <- syscall.SIGTERM
-				break
-			}
-
-			time.Sleep(time.Second)
+		if err := createProcFile(logger, conf); err != nil {
+			serverErrors <- err
+			return
 		}
+
+		go scanProcFile(logger, conf, shutdown)
 	}()
 
-	// Blocking main and waiting for shutdown.
+	// block main and wait for shutdown or errors.
 	select {
 	case err = <-serverErrors:
 		return fmt.Errorf("server error: %w", err)
 
 	case sig := <-shutdown:
-		localLogger.Info("shutdown", "status", "shutdown started", "signal", sig)
-		defer localLogger.Info("shutdown", "status", "shutdown complete", "signal", sig)
+		logger.Info("shutdown started from signal", sig.String())
+		defer logger.Info("shutdown completed from signal", sig.String())
 
 		// Give outstanding requests a deadline for completion.
-		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeoutSeconds*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), serverShutdownTimeoutSeconds*time.Second)
 		defer cancel()
 
 		// Asking listener to shut down and shed load.
@@ -116,5 +115,30 @@ func runStdIn(conf *sat.Config) error {
 	if err = s.ExecFromStdin(); err != nil {
 		return errors.Wrap(err, "sat.ExecFromStdin")
 	}
+	return nil
+}
+
+func createProcFile(log *vlog.Logger, conf *sat.Config) error {
+	// write a file to disk which describes this instance
+	info := process.NewInfo(conf.Port, conf.JobType)
+	if err := info.Write(conf.ProcUUID); err != nil {
+		return errors.Wrap(err, "failed to Write process info")
+	}
+
+	return nil
+}
+
+func scanProcFile(log *vlog.Logger, conf *sat.Config, shutdown chan os.Signal) error {
+	// continually look for the deletion of our procfile
+	for {
+		if _, err := process.Find(conf.ProcUUID); err != nil {
+			log.Warn("proc file deleted, sending termination signal")
+			shutdown <- syscall.SIGTERM
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
 	return nil
 }
