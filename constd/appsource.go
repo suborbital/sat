@@ -6,7 +6,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
+	aopts "github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/vektor/vlog"
 )
 
 func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
@@ -37,20 +39,22 @@ func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
 	return app, errchan
 }
 
-func startAppSourceWithRetry(source appsource.AppSource) error {
-	backoffMS := float32(500)
+func startAppSourceWithRetry(log *vlog.Logger, source appsource.AppSource) error {
+	backoffMS := float32(1000)
 
 	var err error
 
-	i := 0
-	for i < 5 {
-		if err = source.Start(*options.NewWithModifiers()); err == nil {
+	atmoOpts := aopts.NewWithModifiers()
+
+	for i := 0; i < 10; i++ {
+		if err = source.Start(*atmoOpts); err != nil {
+			log.Error(errors.Wrap(err, "failed to source.Start, will retry"))
+
+			time.Sleep(time.Millisecond * time.Duration(backoffMS))
+			backoffMS *= 1.4
+		} else {
 			break
 		}
-
-		time.Sleep(time.Millisecond * time.Duration(backoffMS))
-		backoffMS *= 1.4
-		i++
 	}
 
 	return err
