@@ -61,7 +61,7 @@ func main() {
 	} else {
 		appSource = appsource.NewHTTPSource(c.config.controlPlane)
 
-		if err := startAppSourceWithRetry(appSource); err != nil {
+		if err := startAppSourceWithRetry(l, appSource); err != nil {
 			log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
 		}
 
@@ -98,6 +98,7 @@ func (c *constd) reconcileAtmo(errchan chan error) {
 			"ATMO_HTTP_PORT="+atmoPort,
 			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
 			"ATMO_ENV_TOKEN="+c.config.envToken,
+			"ATMO_HEADLESS=true",
 		)
 
 		if err != nil {
