@@ -37,7 +37,7 @@ constd:
 	go build -o .bin/constd -tags wasmtime,netgo ./constd
 
 constd/install:
-	go build -o $(HOME)/.constd/bin/constd -tags wasmtime,netgo ./constd
+	go install -tags wasmtime,netgo ./constd
 
 constd/static:
 	go build -o .bin/constd -tags wasmtime,netgo -ldflags="-extldflags=-static" ./constd
