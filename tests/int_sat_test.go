@@ -15,13 +15,14 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	tc "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // IntegrationSuite will test @todo complete this.
 type IntegrationSuite struct {
 	suite.Suite
 
-	container tc.Container
+	container *tc.Container
 	ctxCloser context.CancelFunc
 }
 
@@ -40,7 +41,7 @@ func (i *IntegrationSuite) SetupSuite() {
 
 	satWorkingDir := filepath.Join(dir, "../examples")
 	ctx, ctxCloser := context.WithTimeout(context.Background(), 10*time.Second)
-	i.ctxCloser = ctxCloser
+	defer ctxCloser()
 
 	req := tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
@@ -55,41 +56,30 @@ func (i *IntegrationSuite) SetupSuite() {
 			BindMounts: map[string]string{
 				"/runnables": satWorkingDir,
 			},
+			AutoRemove: true,
+			WaitingFor: wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithMethod(http.MethodPost).WithBody(bytes.NewBuffer([]byte(`hi`))),
 		},
 		Started:      true,
 		ProviderType: tc.ProviderDocker,
 	}
 
 	container, err := tc.GenericContainer(ctx, req)
-	if err != nil {
-		i.FailNowf("could not start up container", "error received: %s", err.Error())
-	}
+	i.Require().NoError(err)
 
-	i.container = container
-
-	i.T().Log("starting up docker...")
-	time.Sleep(2 * time.Second)
+	i.container = &container
 }
 
 // TearDownSuite runs last, and is usually used to close database connections
 // or clear up after running the suite.
 func (i *IntegrationSuite) TearDownSuite() {
-	i.ctxCloser()
 	terminateCtx, termCtxCloser := context.WithTimeout(context.Background(), 3*time.Second)
 	defer termCtxCloser()
-	err := i.container.Terminate(terminateCtx)
-	if err != nil {
-		i.FailNowf("terminate failed", err.Error())
-	}
-	i.T().Log("hold on, terminating docker container...")
-	time.Sleep(2 * time.Second)
+	err := (*i.container).Terminate(terminateCtx)
+	i.Require().NoError(err)
+
+	err = wait.NewExitStrategy().WithPollInterval(3*time.Second).WithExitTimeout(2*time.Minute).WaitUntilReady(context.Background(), *i.container)
+	i.Require().NoError(err)
 }
-
-// SetupTest runs before each individual test methods.
-func (i *IntegrationSuite) SetupTest() {}
-
-// TearDownTest runs after each individual test methods.
-func (i *IntegrationSuite) TearDownTest() {}
 
 // TestSatEndpoints is an example test method. Any method that starts with Test* is
 // going to be run. The test methods should be independent of each other and
@@ -116,13 +106,6 @@ func (i *IntegrationSuite) TestSatEndpoints() {
 		},
 	}
 
-	//get := http.MethodGet
-	//
-	//data='{"text":"from Bob Morane"}'
-	//curl -d "${data}" \
-	//-H "Content-Type: application/json" \
-	//-X POST "http://localhost:8080"
-	//```
 	client := http.Client{
 		Timeout: 2 * time.Second,
 	}
