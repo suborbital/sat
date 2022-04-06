@@ -31,8 +31,8 @@ then
 elif [ "$osarch" == "Darwin arm64" ] # ...and this is arm64
 then
     echo $unsupported $osarch
-    exit -1
+    exit 1
 else
     echo $unsupported $osarch
-    exit -1
+    exit 1
 fi
