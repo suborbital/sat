@@ -7,7 +7,6 @@ import (
 
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
-	aopts "github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -45,7 +44,7 @@ func startAppSourceWithRetry(log *vlog.Logger, source appsource.AppSource) error
 
 	var err error
 
-	atmoOpts := aopts.NewWithModifiers()
+	atmoOpts := options.NewWithModifiers()
 
 	for i := 0; i < 10; i++ {
 		if err = source.Start(*atmoOpts); err != nil {
