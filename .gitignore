@@ -1,6 +1,7 @@
 .bin
 target
-
+traces/*
+!traces/.gitkeep
 .DS_Store
 
 log.txt

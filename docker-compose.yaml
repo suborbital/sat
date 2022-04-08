@@ -36,7 +36,7 @@ services:
       - "8888:8888"
     volumes:
       - ./otel-config.yaml:/etc/otel/config.yaml:ro
-      - ./traces.json:/traces.json:rw
+      - ./traces:/traces:rw
 
   linter:
     container_name: "sat_linter"
