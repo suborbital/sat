@@ -22,7 +22,7 @@ import (
 type IntegrationSuite struct {
 	suite.Suite
 
-	container *tc.Container
+	container tc.Container
 	ctxCloser context.CancelFunc
 }
 
@@ -66,7 +66,7 @@ func (i *IntegrationSuite) SetupSuite() {
 	container, err := tc.GenericContainer(ctx, req)
 	i.Require().NoError(err)
 
-	i.container = &container
+	i.container = container
 }
 
 // TearDownSuite runs last, and is usually used to close database connections
@@ -74,11 +74,26 @@ func (i *IntegrationSuite) SetupSuite() {
 func (i *IntegrationSuite) TearDownSuite() {
 	terminateCtx, termCtxCloser := context.WithTimeout(context.Background(), 3*time.Second)
 	defer termCtxCloser()
-	err := (*i.container).Terminate(terminateCtx)
+
+	tearDownChan := make(chan struct{}, 1)
+
+	// set up teardown before we terminate the container, because if we terminate first and then set up this exit
+	// strategy after, depending on the computer the container might have been torn down already, which will cause the
+	// strategy to panic due to a nil pointer, because there's no .State() on a torn down (nil) container.
+	go func() {
+		err := wait.NewExitStrategy().
+			WithPollInterval(3*time.Second).
+			WithExitTimeout(2*time.Minute).
+			WaitUntilReady(context.Background(), i.container)
+		i.Require().NoError(err)
+
+		tearDownChan <- struct{}{}
+	}()
+
+	err := i.container.Terminate(terminateCtx)
 	i.Require().NoError(err)
 
-	err = wait.NewExitStrategy().WithPollInterval(3*time.Second).WithExitTimeout(2*time.Minute).WaitUntilReady(context.Background(), *i.container)
-	i.Require().NoError(err)
+	<-tearDownChan
 }
 
 // TestSatEndpoints is an example test method. Any method that starts with Test* is
