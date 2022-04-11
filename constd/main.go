@@ -43,26 +43,7 @@ func main() {
 		sats:   map[string]*watcher{},
 	}
 
-	var appSource appsource.AppSource
-	var errChan chan error
-
-	// if an external control plane hasn't been set, act as the control plane
-	// but if one has been set, use it (and launch all children with it configured)
-	if c.config.ControlPlane == config.DefaultControlPlane {
-		appSource, errChan = startAppSourceServer(c.config.BundlePath)
-	} else {
-		appSource = appsource.NewHTTPSource(c.config.ControlPlane)
-
-		if err := startAppSourceWithRetry(l, appSource); err != nil {
-			log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
-		}
-
-		if err = registerWithControlPlane(c.config); err != nil {
-			log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
-		}
-
-		errChan = make(chan error)
-	}
+	appSource, errChan := c.setupAppSource()
 
 	// main event loop
 	go func() {
@@ -178,4 +159,27 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan c
 			}
 		}
 	}
+}
+
+func (c *constd) setupAppSource() (appsource.AppSource, chan error) {
+	// if an external control plane hasn't been set, act as the control plane
+	// but if one has been set, use it (and launch all children with it configured)
+	if c.config.ControlPlane == config.DefaultControlPlane {
+		appSource, errChan := startAppSourceServer(c.config.BundlePath)
+		return appSource, errChan
+	}
+
+	appSource := appsource.NewHTTPSource(c.config.ControlPlane)
+
+	if err := startAppSourceWithRetry(c.logger, appSource); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
+	}
+
+	if err := registerWithControlPlane(c.config); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
+	}
+
+	errChan := make(chan error)
+
+	return appSource, errChan
 }
