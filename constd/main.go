@@ -7,35 +7,27 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/sat/constd/exec"
 	"github.com/suborbital/vektor/vlog"
+
+	"github.com/suborbital/sat/constd/config"
+	"github.com/suborbital/sat/constd/exec"
 )
 
 const (
-	atmoPort            = "8080"
-	defaultControlPlane = "localhost:9090"
+	atmoPort = "8080"
 )
 
 type constd struct {
 	logger *vlog.Logger
-	config *config
+	config config.Config
 	atmo   *watcher
 	sats   map[string]*watcher // map of FQFNs to watchers
 }
 
-type config struct {
-	bundlePath   string
-	execMode     string
-	satTag       string
-	atmoTag      string
-	controlPlane string
-	envToken     string
-	upstreamHost string
-}
-
 func main() {
-	config, err := loadConfig()
+	conf, err := config.Parse(os.Args[1:])
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to loadConfig"))
 	}
@@ -46,70 +38,52 @@ func main() {
 
 	c := &constd{
 		logger: l,
-		config: config,
+		config: conf,
 		atmo:   newWatcher("atmo", l),
 		sats:   map[string]*watcher{},
 	}
 
-	var appSource appsource.AppSource
-	var errchan chan error
-
-	// if an external control plane hasn't been set, act as the control plane
-	// but if one has been set, use it (and launch all children with it configured)
-	if c.config.controlPlane == defaultControlPlane {
-		appSource, errchan = startAppSourceServer(config.bundlePath)
-	} else {
-		appSource = appsource.NewHTTPSource(c.config.controlPlane)
-
-		if err := startAppSourceWithRetry(l, appSource); err != nil {
-			log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
-		}
-
-		if err := registerWithControlPlane(c.config); err != nil {
-			log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
-		}
-
-		errchan = make(chan error)
-	}
+	appSource, errChan := c.setupAppSource()
 
 	// main event loop
 	go func() {
 		for {
-			c.reconcileAtmo(errchan)
-			c.reconcileConstellation(appSource, errchan)
+			c.reconcileAtmo(errChan)
+			c.reconcileConstellation(appSource, errChan)
 
 			time.Sleep(time.Second)
 		}
 	}()
 
 	// assuming nothing above throws an error, this will block forever
-	for err := range errchan {
+	for err = range errChan {
 		log.Fatal(errors.Wrap(err, "encountered error"))
 	}
 }
 
-func (c *constd) reconcileAtmo(errchan chan error) {
+func (c *constd) reconcileAtmo(errChan chan error) {
 	report := c.atmo.report()
-	if report == nil {
-		c.logger.Info("launching atmo")
-
-		uuid, pid, err := exec.Run(
-			atmoCommand(c.config, atmoPort),
-			"ATMO_HTTP_PORT="+atmoPort,
-			"ATMO_CONTROL_PLANE="+c.config.controlPlane,
-			"ATMO_ENV_TOKEN="+c.config.envToken,
-			"ATMO_HEADLESS=true",
-		)
-
-		if err != nil {
-			errchan <- errors.Wrap(err, "failed to Run Atmo")
-		}
-
-		c.atmo.add(atmoPort, uuid, pid)
+	if report != nil {
+		return
 	}
+
+	c.logger.Info("launching atmo")
+
+	uuid, pid, err := exec.Run(
+		atmoCommand(c.config, atmoPort),
+		"ATMO_HTTP_PORT="+atmoPort,
+		"ATMO_CONTROL_PLANE="+c.config.ControlPlane,
+		"ATMO_ENV_TOKEN="+c.config.EnvToken,
+	)
+
+	if err != nil {
+		errChan <- errors.Wrap(err, "failed to Run Atmo")
+	}
+
+	c.atmo.add(atmoPort, uuid, pid)
 }
 
-func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan chan error) {
+func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
 	apps := appSource.Applications()
 
 	for _, app := range apps {
@@ -133,12 +107,12 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 				uuid, pid, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
-					"SAT_ENV_TOKEN="+c.config.envToken,
-					"SAT_CONTROL_PLANE="+c.config.controlPlane,
+					"SAT_ENV_TOKEN="+c.config.EnvToken,
+					"SAT_CONTROL_PLANE="+c.config.ControlPlane,
 				)
 
 				if err != nil {
-					errchan <- errors.Wrap(err, "sat exited with error")
+					errChan <- errors.Wrap(err, "sat exited with error")
 				}
 
 				satWatcher.add(port, uuid, pid)
@@ -187,54 +161,25 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errchan c
 	}
 }
 
-func loadConfig() (*config, error) {
-	satVersion := "latest"
-	if version, sExists := os.LookupEnv("CONSTD_SAT_VERSION"); sExists {
-		satVersion = version
+func (c *constd) setupAppSource() (appsource.AppSource, chan error) {
+	// if an external control plane hasn't been set, act as the control plane
+	// but if one has been set, use it (and launch all children with it configured)
+	if c.config.ControlPlane == config.DefaultControlPlane {
+		appSource, errChan := startAppSourceServer(c.config.BundlePath)
+		return appSource, errChan
 	}
 
-	atmoVersion := "latest"
-	if version, aExists := os.LookupEnv("CONSTD_ATMO_VERSION"); aExists {
-		atmoVersion = version
+	appSource := appsource.NewHTTPSource(c.config.ControlPlane)
+
+	if err := startAppSourceWithRetry(c.logger, appSource); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
 	}
 
-	execMode := "docker"
-	if mode, eExists := os.LookupEnv("CONSTD_EXEC_MODE"); eExists {
-		execMode = mode
+	if err := registerWithControlPlane(c.config); err != nil {
+		log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
 	}
 
-	controlPlane := defaultControlPlane
-	if cp, cExists := os.LookupEnv("CONSTD_CONTROL_PLANE"); cExists {
-		controlPlane = cp
-	}
+	errChan := make(chan error)
 
-	envToken := ""
-	if et, eExists := os.LookupEnv("CONSTD_ENV_TOKEN"); eExists {
-		envToken = et
-	}
-
-	upstreamHost := ""
-	if uh, uExists := os.LookupEnv("CONSTD_UPSTREAM_HOST"); uExists {
-		upstreamHost = uh
-	}
-
-	var bundlePath string
-
-	if controlPlane == defaultControlPlane && len(os.Args) < 2 {
-		return nil, errors.New("missing required argument: bundle path")
-	} else if len(os.Args) == 2 {
-		bundlePath = os.Args[1]
-	}
-
-	c := &config{
-		bundlePath:   bundlePath,
-		execMode:     execMode,
-		satTag:       satVersion,
-		atmoTag:      atmoVersion,
-		controlPlane: controlPlane,
-		envToken:     envToken,
-		upstreamHost: upstreamHost,
-	}
-
-	return c, nil
+	return appSource, errChan
 }

@@ -12,9 +12,10 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/suborbital/vektor/vlog"
+
 	"github.com/suborbital/sat/sat"
 	"github.com/suborbital/sat/sat/process"
-	"github.com/suborbital/vektor/vlog"
 )
 
 func main() {

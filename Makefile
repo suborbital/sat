@@ -64,4 +64,10 @@ constd/metal/otel/collector: constd
 	ATMO_TRACER_PROBABILITY=${ATMO_TRACER_PROBABILITY} \
 	CONSTD_EXEC_MODE=metal .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
 
+lint:
+	docker compose up linter
+
+importfix:
+	docker compose up lintfixer
+
 .PHONY: sat constd

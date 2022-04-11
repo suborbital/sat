@@ -36,4 +36,27 @@ services:
       - "8888:8888"
     volumes:
       - ./otel-config.yaml:/etc/otel/config.yaml:ro
-      - ./traces.json:/traces.json:rw
+      - ./traces:/traces:rw
+
+  linter:
+    container_name: "sat_linter"
+    image: "golangci/golangci-lint:v1.45.2-alpine"
+    volumes:
+      - .:/app
+      - vendor:/app/vendor/
+    working_dir: /app
+    command: golangci-lint run ./...
+
+  lintfixer:
+    container_name: "sat_lintfixer"
+    build:
+      context: .
+      dockerfile: ./ops/Dockerfile-gci
+    volumes:
+      - .:/app:rw
+      - vendor:/app/vendor/
+    working_dir: /app
+    command: ./ops/gci.sh
+
+volumes:
+  vendor:

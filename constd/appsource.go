@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
-	aopts "github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -15,11 +15,11 @@ func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
 	app := appsource.NewBundleSource(bundlePath)
 	opts := options.NewWithModifiers()
 
-	errchan := make(chan error)
+	errChan := make(chan error)
 
 	router, err := appsource.NewAppSourceVKRouter(app, *opts).GenerateRouter()
 	if err != nil {
-		errchan <- errors.Wrap(err, "failed to NewAppSourceVKRouter.GenerateRouter")
+		errChan <- errors.Wrap(err, "failed to NewAppSourceVKRouter.GenerateRouter")
 	}
 
 	server := vk.New(
@@ -32,11 +32,11 @@ func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
 
 	go func() {
 		if err := server.Start(); err != nil {
-			errchan <- errors.Wrap(err, "failed to server.Start")
+			errChan <- errors.Wrap(err, "failed to server.Start")
 		}
 	}()
 
-	return app, errchan
+	return app, errChan
 }
 
 func startAppSourceWithRetry(log *vlog.Logger, source appsource.AppSource) error {
@@ -44,7 +44,7 @@ func startAppSourceWithRetry(log *vlog.Logger, source appsource.AppSource) error
 
 	var err error
 
-	atmoOpts := aopts.NewWithModifiers()
+	atmoOpts := options.NewWithModifiers()
 
 	for i := 0; i < 10; i++ {
 		if err = source.Start(*atmoOpts); err != nil {
