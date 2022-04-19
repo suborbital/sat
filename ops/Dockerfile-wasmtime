@@ -1,4 +1,4 @@
-FROM golang:1.17
+FROM golang:1.18
 
 RUN apt-get update && apt-get install -y xz-utils
 RUN go install github.com/itchyny/gojq/cmd/gojq@latest

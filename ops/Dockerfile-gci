@@ -1,4 +1,4 @@
-FROM golang:1.17
+FROM golang:1.18
 
 RUN ["go",  "install", "github.com/daixiang0/gci@v0.3.3"]
 
