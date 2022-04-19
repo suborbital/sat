@@ -1,6 +1,6 @@
 FROM suborbital/wasmtime:dev as wasmtime
 
-FROM golang:1.17 as builder
+FROM golang:1.18 as builder
 
 COPY --from=wasmtime /tmp/wasmtime/libwasmtime.a /usr/local/lib
 

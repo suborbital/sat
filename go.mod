@@ -1,6 +1,6 @@
 module github.com/suborbital/sat
 
-go 1.17
+go 1.18
 
 require (
 	github.com/google/uuid v1.3.0
@@ -11,6 +11,7 @@ require (
 	github.com/suborbital/grav v0.5.0
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1
+	github.com/testcontainers/testcontainers-go v0.12.0
 	go.opentelemetry.io/otel v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.4.1
@@ -36,6 +37,7 @@ require (
 	github.com/docker/docker v20.10.11+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.4 // indirect
@@ -81,11 +83,6 @@ require (
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-)
-
-require (
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/testcontainers/testcontainers-go v0.12.0
 )
 
 replace github.com/bytecodealliance/wasmtime-go => github.com/suborbital/wasmtime-go v0.35.0-aarch64
