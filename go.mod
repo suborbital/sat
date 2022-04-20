@@ -12,11 +12,11 @@ require (
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/otel v1.4.1
+	go.opentelemetry.io/otel v1.6.3
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.4.1
 	go.opentelemetry.io/otel/sdk v1.4.1
-	go.opentelemetry.io/otel/trace v1.4.1
+	go.opentelemetry.io/otel/trace v1.6.3
 	google.golang.org/grpc v1.44.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -37,7 +37,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.4 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
