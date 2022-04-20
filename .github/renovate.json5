@@ -4,5 +4,5 @@
     "gomodTidy", // go mod tidy
     "gomodUpdateImportPaths",
   ],
-  ignorePaths: ["constd/example-project/**"],
+  ignorePaths: ["examples/**", "constd/example-project/**"],
 }
