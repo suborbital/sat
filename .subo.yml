@@ -5,6 +5,3 @@ dotVersionFiles:
 preMakeTargets:
   - sat
   - test
-
-postMakeTargets:
-  - docker/publish
