@@ -53,7 +53,7 @@ var headless = false
 func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 	wruntime.UseInternalLogger(config.Logger)
 
-	exec := executor.NewWithGrav(config.Logger, nil)
+	exec := executor.NewWithGrav(config.Logger, nil, nil)
 
 	var runner rt.Runnable
 	if config.Runnable != nil && len(config.Runnable.ModuleRef.Data) > 0 {
