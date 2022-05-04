@@ -2,25 +2,28 @@ package main
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/suborbital/sat/sat"
+	"go.opentelemetry.io/otel/trace"
+	"log"
 )
 
+// Set the following environment variables before running
+// 	SAT_CONTROL_PLANE={Control Plane URL}
+// 	SAT_ENV_TOKEN={Environment token}
+//
+// Replace Fully Qualified Function Name in sat.ConfigFromRunnableArg to load a function
+// See also https://docs.suborbital.dev/compute/concepts/fully-qualified-function-names
 func main() {
-	// SAT_CONTROL_PLANE=localhost:8080
-	// SAT_ENV_TOKEN={compute token}
+	config, _ := sat.ConfigFromRunnableArg("com.suborbital.acmeco#default::embed@v1.0.0")
 
-	config, _ := sat.ConfigFromRunnableArg("com.suborbital......")
+	s, _ := sat.New(config, trace.NewNoopTracerProvider())
 
-	s, _ := sat.New(config, nil)
-
-	for {
-		resp, err := s.Exec([]byte("hello"))
+	for i := 1; i < 100; i++ {
+		resp, err := s.Exec([]byte("world!"))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(resp.Output)
+		fmt.Printf("%s\n", resp.Output)
 	}
 }
