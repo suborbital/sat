@@ -86,7 +86,10 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		transport: transport,
 		exec:      exec,
 		log:       config.Logger,
-		tracer:    traceProvider.Tracer("sat"),
+	}
+
+	if traceProvider != nil {
+		sat.tracer = traceProvider.Tracer("sat")
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
