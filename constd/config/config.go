@@ -20,6 +20,7 @@ type Config struct {
 	ControlPlane string `env:"CONSTD_CONTROL_PLANE,overwrite"`
 	EnvToken     string `env:"CONSTD_ENV_TOKEN"`
 	UpstreamHost string `env:"CONSTD_UPSTREAM_HOST"`
+	Headless     bool   `env:"CONSTD_HEADLESS,default=false"`
 }
 
 // Parse will return a resolved config struct configured by a combination of environment variables and command line

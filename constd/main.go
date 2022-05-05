@@ -69,11 +69,19 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 
 	c.logger.Info("launching atmo")
 
+	atmoEnv := []string{
+		"ATMO_HTTP_PORT=" + atmoPort,
+		"ATMO_CONTROL_PLANE=" + c.config.ControlPlane,
+		"ATMO_ENV_TOKEN=" + c.config.EnvToken,
+	}
+
+	if c.config.Headless {
+		atmoEnv = append(atmoEnv, "ATMO_HEADLESS=true")
+	}
+
 	uuid, pid, err := exec.Run(
 		atmoCommand(c.config, atmoPort),
-		"ATMO_HTTP_PORT="+atmoPort,
-		"ATMO_CONTROL_PLANE="+c.config.ControlPlane,
-		"ATMO_ENV_TOKEN="+c.config.EnvToken,
+		atmoEnv...,
 	)
 
 	if err != nil {
