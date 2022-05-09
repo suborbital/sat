@@ -11,6 +11,12 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
+type SatStdinRun struct {
+	ErrorType    int    `json:"error_type"`
+	ErrorMessage string `json:"error"`
+	Output       string `json:"output"`
+}
+
 // execFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout
 func (s *Sat) ExecFromStdin() error {
 	scanner := bufio.NewScanner(os.Stdin)
@@ -44,6 +50,7 @@ func (s *Sat) ExecFromStdin() error {
 	resp := result.(*request.CoordinatedResponse)
 
 	fmt.Println(string(resp.Output))
+	//print formatted JSON?
 
 	return nil
 }

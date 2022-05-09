@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"net/http"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/sat/sat"
@@ -11,21 +11,21 @@ import (
 func main() {
 	config, err := sat.ConfigFromArgs()
 	if err != nil {
-		log.Fatal(err)
+		sat.Fatal(err)
 	}
 
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
 	s, err := sat.New(config)
 	if err != nil {
-		log.Fatal(err)
+		sat.Fatal(err)
 	}
 
 	if config.UseStdin {
 		if err := s.ExecFromStdin(); err != nil {
-			log.Fatal(err)
+			os.Exit(sat.RuntimeError)
 		}
-
-		return
+		//be explicit about it and
+		os.Exit(sat.Success) //this is identical to the return
 	}
 
 	if err := s.Start(); err != nil {
