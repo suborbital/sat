@@ -734,8 +734,8 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/suborbital/atmo v0.4.6 h1:+6UsrEm4vJIymP8gOB4DfBTCvZ1A0QMrqJLHQvodUXw=
-github.com/suborbital/atmo v0.4.6/go.mod h1:dKpHBmdjjS3x2PNxZZnmAAkBUDvmu7LRRhpqa1CtXEk=
+github.com/suborbital/atmo v0.4.7 h1:8XUt4V/IgYzFzoJybuB4lgrcOPCfu844arxUwsQhwxo=
+github.com/suborbital/atmo v0.4.7/go.mod h1:kQ8uJPihYyXvclLAs9k4IyEsj300fnkMyXaFY4tVGgA=
 github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501 h1:PEiRGQPYCILVPR5zqi+Ljo9v5NjVIj9vPxQz8m2Neno=
 github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501/go.mod h1:c0Jbycyryjz4RMtiENnvAT8J9yIMGSPt3GpyQJt1TH8=
 github.com/suborbital/reactr v0.15.1 h1:IJNsh9SiXHp2B4wpTSMseIym4XvAYP7N5fQSADfGwbM=

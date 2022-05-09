@@ -7,7 +7,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-envconfig v0.6.0
 	github.com/stretchr/testify v1.7.1
-	github.com/suborbital/atmo v0.4.6
+	github.com/suborbital/atmo v0.4.7
 	github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1
