@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/suborbital/sat/sat"
-	"go.opentelemetry.io/otel/trace"
 	"log"
+
+	"github.com/suborbital/sat/sat"
 )
 
 // Set the following environment variables before running
@@ -16,7 +16,7 @@ import (
 func main() {
 	config, _ := sat.ConfigFromRunnableArg("com.suborbital.acmeco#default::embed@v1.0.0")
 
-	s, _ := sat.New(config, trace.NewNoopTracerProvider())
+	s, _ := sat.New(config, nil)
 
 	for i := 1; i < 100; i++ {
 		resp, err := s.Exec([]byte("world!"))
