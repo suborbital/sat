@@ -7,16 +7,16 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-envconfig v0.6.0
 	github.com/stretchr/testify v1.7.1
-	github.com/suborbital/atmo v0.4.6
+	github.com/suborbital/atmo v0.4.7
 	github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/otel v1.6.3
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.3
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.3
-	go.opentelemetry.io/otel/sdk v1.6.3
-	go.opentelemetry.io/otel/trace v1.6.3
+	go.opentelemetry.io/otel v1.7.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.7.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.7.0
+	go.opentelemetry.io/otel/sdk v1.7.0
+	go.opentelemetry.io/otel/trace v1.7.0
 	google.golang.org/grpc v1.46.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -26,7 +26,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/Microsoft/hcsshim v0.8.23 // indirect
 	github.com/bytecodealliance/wasmtime-go v0.35.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/cgroups v1.0.1 // indirect
 	github.com/containerd/containerd v1.5.9 // indirect
@@ -70,8 +70,8 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.6.3 // indirect
-	go.opentelemetry.io/proto/otlp v0.15.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.7.0 // indirect
+	go.opentelemetry.io/proto/otlp v0.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20220313003712-b769efc7c000 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect

@@ -69,18 +69,26 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 
 	c.logger.Info("launching atmo")
 
+	atmoEnv := []string{
+		"ATMO_HTTP_PORT=" + atmoPort,
+		"ATMO_CONTROL_PLANE=" + c.config.ControlPlane,
+		"ATMO_ENV_TOKEN=" + c.config.EnvToken,
+	}
+
+	if c.config.Headless {
+		atmoEnv = append(atmoEnv, "ATMO_HEADLESS=true")
+	}
+
 	uuid, pid, err := exec.Run(
 		atmoCommand(c.config, atmoPort),
-		"ATMO_HTTP_PORT="+atmoPort,
-		"ATMO_CONTROL_PLANE="+c.config.ControlPlane,
-		"ATMO_ENV_TOKEN="+c.config.EnvToken,
+		atmoEnv...,
 	)
 
 	if err != nil {
 		errChan <- errors.Wrap(err, "failed to Run Atmo")
 	}
 
-	c.atmo.add(atmoPort, uuid, pid)
+	c.atmo.add("atmo-proxy", atmoPort, uuid, pid)
 }
 
 func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
@@ -101,6 +109,8 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan c
 			satWatcher := c.sats[runnable.FQFN]
 
 			launch := func() {
+				c.logger.Info("launching sat (", runnable.FQFN, ")")
+
 				cmd, port := satCommand(c.config, runnable)
 
 				// repeat forever in case the command does error out
@@ -112,10 +122,13 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan c
 				)
 
 				if err != nil {
-					errChan <- errors.Wrap(err, "sat exited with error")
+					c.logger.Error(errors.Wrapf(err, "failed to exec.Run sat ( %s )", runnable.FQFN))
+					return
 				}
 
-				satWatcher.add(port, uuid, pid)
+				satWatcher.add(runnable.FQFN, port, uuid, pid)
+
+				c.logger.Info("successfully started sat (", runnable.FQFN, ") on port", port)
 			}
 
 			// we want to max out at 8 threads per instance
@@ -125,9 +138,9 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan c
 			}
 
 			report := satWatcher.report()
-			if report == nil {
+			if report == nil || report.instCount == 0 {
 				// if no instances exist, launch one
-				c.logger.Warn("launching", runnable.FQFN)
+				c.logger.Warn("no instances exist for", runnable.FQFN)
 
 				go launch()
 			} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
@@ -146,7 +159,7 @@ func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan c
 					// if the current instances have too much spare time on their hands
 					c.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-					satWatcher.terminate()
+					satWatcher.scaleDown()
 				}
 			}
 
