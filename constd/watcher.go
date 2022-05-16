@@ -93,7 +93,7 @@ func (w *watcher) report() *watcherReport {
 	}
 
 	totalThreads := 0
-	failedPorts := []string{}
+	failedPorts := make([]string, 0)
 
 	for p := range w.instances {
 		metrics, err := getReport(p)
