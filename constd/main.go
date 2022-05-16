@@ -174,8 +174,7 @@ func (c *constd) setupAppSource() (appsource.AppSource, chan error) {
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
 	if c.config.ControlPlane == config.DefaultControlPlane {
-		appSource, errChan := startAppSourceServer(c.config.BundlePath)
-		return appSource, errChan
+		return startAppSourceServer(c.config.BundlePath)
 	}
 
 	appSource := appsource.NewHTTPSource(c.config.ControlPlane)
