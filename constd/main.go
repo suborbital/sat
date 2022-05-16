@@ -15,10 +15,6 @@ import (
 	"github.com/suborbital/sat/constd/exec"
 )
 
-const (
-	atmoPort = "8080"
-)
-
 type constd struct {
 	logger *vlog.Logger
 	config config.Config
@@ -70,7 +66,7 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 	c.logger.Info("launching atmo")
 
 	atmoEnv := []string{
-		"ATMO_HTTP_PORT=" + atmoPort,
+		"ATMO_HTTP_PORT=" + c.config.AtmoPort,
 		"ATMO_CONTROL_PLANE=" + c.config.ControlPlane,
 		"ATMO_ENV_TOKEN=" + c.config.EnvToken,
 	}
@@ -80,7 +76,7 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 	}
 
 	uuid, pid, err := exec.Run(
-		atmoCommand(c.config, atmoPort),
+		atmoCommand(c.config, c.config.AtmoPort),
 		atmoEnv...,
 	)
 
@@ -88,7 +84,7 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 		errChan <- errors.Wrap(err, "failed to Run Atmo")
 	}
 
-	c.atmo.add("atmo-proxy", atmoPort, uuid, pid)
+	c.atmo.add("atmo-proxy", c.config.AtmoPort, uuid, pid)
 }
 
 func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {

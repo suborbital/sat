@@ -17,6 +17,7 @@ type Config struct {
 	ExecMode     string `env:"CONSTD_EXEC_MODE,default=docker"`
 	SatTag       string `env:"CONSTD_SAT_VERSION,default=latest"`
 	AtmoTag      string `env:"CONSTD_ATMO_VERSION,default=latest"`
+	AtmoPort     string `env:"CONSTD_ATMO_PORT,default=8080"`
 	ControlPlane string `env:"CONSTD_CONTROL_PLANE,overwrite"`
 	EnvToken     string `env:"CONSTD_ENV_TOKEN"`
 	UpstreamHost string `env:"CONSTD_UPSTREAM_HOST"`
