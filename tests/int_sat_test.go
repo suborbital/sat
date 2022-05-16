@@ -53,8 +53,13 @@ func (i *IntegrationSuite) SetupSuite() {
 			Cmd: []string{
 				"sat", "/runnables/hello-echo/hello-echo.wasm",
 			},
-			BindMounts: map[string]string{
-				"/runnables": satWorkingDir,
+			Mounts: []tc.ContainerMount{
+				{
+					Source: tc.DockerBindMountSource{
+						HostPath: satWorkingDir,
+					},
+					Target: tc.ContainerMountTarget("/runnables"),
+				},
 			},
 			AutoRemove: true,
 			WaitingFor: wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithMethod(http.MethodPost).WithBody(bytes.NewBuffer([]byte(`hi`))),
