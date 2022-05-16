@@ -73,7 +73,6 @@ func (w *watcher) scaleDown() error {
 // terminateInstance terminates the instance from the given port
 func (w *watcher) terminateInstance(p string) error {
 	inst := w.instances[p]
-	delete(w.instances, p)
 
 	if inst != nil {
 		if err := process.Delete(inst.uuid); err != nil {
@@ -81,6 +80,7 @@ func (w *watcher) terminateInstance(p string) error {
 		}
 	}
 
+	delete(w.instances, p)
 	w.log.Info("successfully terminated instance on port", p, "(", inst.fqfn, ")")
 
 	return nil
