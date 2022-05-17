@@ -3,5 +3,6 @@ target
 traces/*
 !traces/.gitkeep
 .DS_Store
+.vscode
 
 log.txt
