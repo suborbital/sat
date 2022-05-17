@@ -742,8 +742,8 @@ github.com/suborbital/reactr v0.15.1 h1:IJNsh9SiXHp2B4wpTSMseIym4XvAYP7N5fQSADfG
 github.com/suborbital/reactr v0.15.1/go.mod h1:JC+km01xHNSuQDYsxWCBBh7fJrctI1Yai7Mm/Ws3xAU=
 github.com/suborbital/vektor v0.6.0 h1:HIGsnzFeAHYqHVYl4kcKG1ZNK858eC8xvDq4fcG4ILs=
 github.com/suborbital/vektor v0.6.0/go.mod h1:gYHhFyF94vL/DY3Zxv988zJW3Z7SsLgxvB321UtCNwM=
-github.com/suborbital/wasmtime-go v0.35.0-aarch64 h1:7UjA/1dB1KkH/sI/jhlqQdKnY8tuLmQpszoEwxmg1B0=
-github.com/suborbital/wasmtime-go v0.35.0-aarch64/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
+github.com/suborbital/wasmtime-go v0.36.0 h1:ubBAJv1Rv/u4IG6QELHsXORR3ibio/OXQsFbp6+GkQU=
+github.com/suborbital/wasmtime-go v0.36.0/go.mod h1:q320gUxqyI8yB+ZqRuaJOEnGkAnHh6WtJjMaT2CW4wI=
 github.com/syndtr/gocapability v0.0.0-20170704070218-db04d3cc01c8/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=

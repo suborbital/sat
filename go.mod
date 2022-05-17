@@ -83,4 +83,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-replace github.com/bytecodealliance/wasmtime-go => github.com/suborbital/wasmtime-go v0.35.0-aarch64
+replace github.com/bytecodealliance/wasmtime-go => github.com/suborbital/wasmtime-go v0.36.0
