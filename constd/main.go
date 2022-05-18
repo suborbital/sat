@@ -53,22 +53,16 @@ func main() {
 loop:
 	for {
 		select {
-		// case <-time.After(time.Second):
-		// 	c.logger.Info("reconciling atmo and constellation")
-		// 	c.reconcileAtmo(errChan)
-		// 	c.reconcileConstellation(appSource, errChan)
 		case <-shutdown:
 			c.logger.Info("terminating constd")
 			break loop
-		// case err = <-errChan:
-		// 	c.logger.Error(err)
-		// 	log.Fatal(errors.Wrap(err, "encountered error"))
+		case err = <-errChan:
+			c.logger.Error(err)
+			log.Fatal(errors.Wrap(err, "encountered error"))
 		default:
 			break
 		}
 
-		c.logger.Info("reconciling atmo and constellation")
-		//
 		c.reconcileAtmo(errChan)
 		c.reconcileConstellation(appSource, errChan)
 
@@ -85,17 +79,13 @@ loop:
 	}
 	wg.Done()
 
-	l.Warn("Terminating atmo apparently")
 	err = c.atmo.terminate()
 	if err != nil {
 		log.Fatal("terminating atmo failed", err)
 	}
 	wg.Done()
-	l.Warn("terminated atmo")
-
-	l.Info("shutdown complete")
 	wg.Wait()
-	l.Info("wg wait in constd done")
+	l.Info("shutdown complete")
 }
 
 func (c *constd) reconcileAtmo(errChan chan error) {
