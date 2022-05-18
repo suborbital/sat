@@ -45,7 +45,7 @@ func main() {
 		sats:   map[string]*watcher{},
 	}
 
-	_, errChan := c.setupAppSource()
+	appSource, errChan := c.setupAppSource()
 
 	wg := sync.WaitGroup{}
 
@@ -70,7 +70,7 @@ loop:
 		c.logger.Info("reconciling atmo and constellation")
 		//
 		c.reconcileAtmo(errChan)
-		// c.reconcileConstellation(appSource, errChan)
+		c.reconcileConstellation(appSource, errChan)
 
 		time.Sleep(time.Second)
 	}

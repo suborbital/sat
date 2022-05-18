@@ -53,50 +53,28 @@ func (i *ConstDIntegrationSuite) SetupSuite() {
 	i.cmd.Stdout = os.Stdout
 	i.cmd.Stderr = os.Stdout
 	i.cmd.Env = append(os.Environ(), fmt.Sprintf("CONSTD_ATMO_PORT=%d", atmoPort), "CONSTD_EXEC_MODE=metal")
-	// i.cmd.Env = []string{
-	// 	fmt.Sprintf("HOME=%s", os.Getenv("HOME")),
-	// 	fmt.Sprintf("CONSTD_ATMO_PORT=%d", atmoPort),
-	// 	"CONSTD_EXEC_MODE=docker",
-	// }
 
 	err = i.cmd.Start()
 	i.Require().NoError(err)
 
-	<-time.After(5 * time.Second)
+	<-time.After(3 * time.Second)
 }
 
 // TearDownSuite runs last, and is usually used to close database connections
 // or clear up after running the suite.
 func (i *ConstDIntegrationSuite) TearDownSuite() {
-	i.T().Log("\n\n\ntearing down suite\n\n\n")
-
-	i.T().Log("sending sigint...")
 	err := i.cmd.Process.Signal(syscall.SIGINT)
 	i.Require().NoError(err)
-	//
-	// i.T().Log("sending sigterm...")
-	// err = i.cmd.Process.Signal(syscall.SIGTERM)
-	// i.Require().NoError(err)
-	//
-	// i.T().Log("sending ctx cancel")
-	// i.cancel()
-	//
-	// i.T().Log("sending process kill")
-	// err = i.cmd.Process.Kill()
-	// i.Require().NoError(err)
-	i.cmd.Wait()
-}
 
-func (i *ConstDIntegrationSuite) TestWait() {
-	time.Sleep(4 * time.Second)
-	i.Equal(1, 1)
+	err = i.cmd.Wait()
+	i.Require().NoError(err)
 }
 
 // TestSatEndpoints is an example test method. Any method that starts with Test* is
 // going to be run. The test methods should be independent of each other and
 // their order of execution should not matter, and you should also be able to
 // run an individual test method on the suite without any issues.
-func (i *ConstDIntegrationSuite) dddTestSatEndpoints() {
+func (i *ConstDIntegrationSuite) TestSatEndpoints() {
 	type testCase struct {
 		name                string
 		path                string

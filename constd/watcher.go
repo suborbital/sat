@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -89,7 +90,11 @@ func (w *watcher) terminateInstance(p string) error {
 	}
 
 	if err := process.Delete(inst.uuid); err != nil {
-		return errors.Wrapf(err, "failed to process.Delete for port %s ( %s )", p, inst.fqfn)
+		w.log.Warn(fmt.Sprintf("process.Delete for port %s / fqfn %s failed, sending syscall.Kill", p, inst.fqfn))
+
+		if err := syscall.Kill(inst.pid, syscall.SIGTERM); err != nil {
+			return errors.Wrapf(err, "syscall.Kill for pid %d failed", inst.pid)
+		}
 	}
 
 	delete(w.instances, p)

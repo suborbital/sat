@@ -78,7 +78,9 @@ func run(conf *sat.Config) error {
 			return
 		}
 
-		go scanProcFile(logger, conf, shutdown)
+		if err = scanProcFile(logger, conf); err != nil {
+			shutdown <- syscall.SIGTERM
+		}
 	}()
 
 	// block main and wait for shutdown or errors.
@@ -122,24 +124,23 @@ func runStdIn(conf *sat.Config) error {
 func createProcFile(log *vlog.Logger, conf *sat.Config) error {
 	// write a file to disk which describes this instance
 	info := process.NewInfo(conf.Port, conf.JobType)
+	log.Info("info to be written", info)
 	if err := info.Write(conf.ProcUUID); err != nil {
 		return errors.Wrap(err, "failed to Write process info")
 	}
 
+	log.Info("procfile created", conf.ProcUUID)
+
 	return nil
 }
 
-func scanProcFile(log *vlog.Logger, conf *sat.Config, shutdown chan os.Signal) error {
+func scanProcFile(log *vlog.Logger, conf *sat.Config) error {
 	// continually look for the deletion of our procfile
 	for {
 		if _, err := process.Find(conf.ProcUUID); err != nil {
-			log.Warn("proc file deleted, sending termination signal")
-			shutdown <- syscall.SIGTERM
-			break
+			return errors.Wrap(err, "proc file deleted")
 		}
 
 		time.Sleep(time.Second)
 	}
-
-	return nil
 }
