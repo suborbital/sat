@@ -1,9 +1,9 @@
 package config_test
 
 import (
-	"os"
 	"testing"
 
+	"github.com/sethvargo/go-envconfig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
@@ -70,25 +70,11 @@ func (cts *ConfigTestSuite) TestParse() {
 	}
 	for _, tt := range tests {
 		cts.Run(tt.name, func() {
-			cts.SetupTest()
 			var err error
-
-			for k, v := range tt.setEnvs {
-				err = os.Setenv(k, v)
-				if err != nil {
-					cts.FailNowf(
-						"set environment variable",
-						"tried to set [%s] to [%s], got error [%s]",
-						k,
-						v,
-						err,
-					)
-				}
-			}
 
 			subTestT := cts.T()
 
-			got, err := config.Parse(tt.args)
+			got, err := config.Parse(tt.args, envconfig.MapLookuper(tt.setEnvs))
 
 			tt.wantErr(subTestT, err)
 			cts.Equal(tt.want, got)

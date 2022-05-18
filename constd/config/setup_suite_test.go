@@ -84,31 +84,3 @@ func (cts *ConfigTestSuite) TearDownSuite() {
 		)
 	}
 }
-
-// SetupTest sets every environment variable value to empty string before any of the tests run. This method is also
-// called from every subtest in the test functions.
-func (cts *ConfigTestSuite) SetupTest() {
-	cts.T().Helper()
-
-	var err error
-	envVars := []string{
-		"CONSTD_EXEC_MODE",
-		"CONSTD_SAT_VERSION",
-		"CONSTD_ATMO_VERSION",
-		"CONSTD_CONTROL_PLANE",
-		"CONSTD_ENV_TOKEN",
-		"CONSTD_UPSTREAM_HOST",
-	}
-
-	for _, v := range envVars {
-		err = os.Unsetenv(v)
-		if err != nil {
-			cts.Require().FailNowf(
-				"ConfigTestSuite.SetupTest",
-				"tried to unset environment variable [%s], got error [%s]",
-				v,
-				err,
-			)
-		}
-	}
-}

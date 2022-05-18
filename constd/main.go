@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-envconfig"
 
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/vektor/vlog"
@@ -26,7 +27,7 @@ type constd struct {
 }
 
 func main() {
-	conf, err := config.Parse(os.Args[1:])
+	conf, err := config.Parse(os.Args[1:], envconfig.OsLookuper())
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to loadConfig"))
 	}
