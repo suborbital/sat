@@ -62,7 +62,7 @@ func Delete(uuid string) error {
 
 	if _, err = os.Stat(filePath); err != nil {
 		// nothing to do
-		return nil
+		return errors.Wrapf(err, "os.Stat failed on path %s", filePath)
 	}
 
 	if err = os.Remove(filePath); err != nil {

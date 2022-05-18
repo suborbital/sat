@@ -39,16 +39,14 @@ type watcherReport struct {
 
 // newWatcher creates a new watcher instance for the given fqfn
 func newWatcher(fqfn string, log *vlog.Logger) *watcher {
-	w := &watcher{
+	return &watcher{
 		fqfn:      fqfn,
 		instances: map[string]*instance{},
 		log:       log,
 	}
-
-	return w
 }
 
-// add adds a new instance to the watched pool
+// add inserts a new instance to the watched pool.
 func (w *watcher) add(fqfn, port, uuid string, pid int) {
 	w.instances[port] = &instance{
 		fqfn: fqfn,
@@ -70,18 +68,32 @@ func (w *watcher) scaleDown() error {
 	return nil
 }
 
-// terminateInstance terminates the instance from the given port
-func (w *watcher) terminateInstance(p string) error {
-	inst := w.instances[p]
-
-	if inst != nil {
-		if err := process.Delete(inst.uuid); err != nil {
-			return errors.Wrapf(err, "failed to process.Delete for port %s ( %s )", p, inst.fqfn)
+func (w *watcher) terminate() error {
+	var err error
+	for p, instance := range w.instances {
+		w.log.Info(fmt.Sprintf("terminating instance on port %s", p))
+		err = w.terminateInstance(p)
+		if err != nil {
+			w.log.Warn("could not terminate instance", instance.fqfn, err.Error())
 		}
 	}
 
+	return err
+}
+
+// terminateInstance terminates the instance from the given port
+func (w *watcher) terminateInstance(p string) error {
+	inst, ok := w.instances[p]
+	if !ok {
+		return fmt.Errorf("there isn't an instance on port %s", p)
+	}
+
+	if err := process.Delete(inst.uuid); err != nil {
+		return errors.Wrapf(err, "failed to process.Delete for port %s ( %s )", p, inst.fqfn)
+	}
+
 	delete(w.instances, p)
-	w.log.Info("successfully terminated instance on port", p, "(", inst.fqfn, ")")
+	w.log.Info(fmt.Sprintf("successfully terminated instance on port %s (%s)", p, inst.fqfn))
 
 	return nil
 }
