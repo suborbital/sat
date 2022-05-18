@@ -27,7 +27,7 @@ type IntegrationSuite struct {
 }
 
 // TestIntegrationSuite gets run from go's test framework that kicks off the suite.
-func TestIntegrationSuite(t *testing.T) {
+func pppTestIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(IntegrationSuite))
 }
 

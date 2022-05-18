@@ -3,7 +3,10 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
 	"runtime"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -32,6 +35,9 @@ func main() {
 		vlog.EnvPrefix("CONSTD"),
 	)
 
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
 	c := &constd{
 		logger: l,
 		config: conf,
@@ -39,22 +45,57 @@ func main() {
 		sats:   map[string]*watcher{},
 	}
 
-	appSource, errChan := c.setupAppSource()
+	_, errChan := c.setupAppSource()
 
-	// main event loop
-	go func() {
-		for {
-			c.reconcileAtmo(errChan)
-			c.reconcileConstellation(appSource, errChan)
+	wg := sync.WaitGroup{}
 
-			time.Sleep(time.Second)
+	wg.Add(2)
+loop:
+	for {
+		select {
+		// case <-time.After(time.Second):
+		// 	c.logger.Info("reconciling atmo and constellation")
+		// 	c.reconcileAtmo(errChan)
+		// 	c.reconcileConstellation(appSource, errChan)
+		case <-shutdown:
+			c.logger.Info("terminating constd")
+			break loop
+		// case err = <-errChan:
+		// 	c.logger.Error(err)
+		// 	log.Fatal(errors.Wrap(err, "encountered error"))
+		default:
+			break
 		}
-	}()
 
-	// assuming nothing above throws an error, this will block forever
-	for err = range errChan {
-		log.Fatal(errors.Wrap(err, "encountered error"))
+		c.logger.Info("reconciling atmo and constellation")
+		//
+		c.reconcileAtmo(errChan)
+		// c.reconcileConstellation(appSource, errChan)
+
+		time.Sleep(time.Second)
 	}
+
+	l.Info("shutting down")
+
+	for _, s := range c.sats {
+		err = s.terminate()
+		if err != nil {
+			log.Fatal("terminating sats failed", err)
+		}
+	}
+	wg.Done()
+
+	l.Warn("Terminating atmo apparently")
+	err = c.atmo.terminate()
+	if err != nil {
+		log.Fatal("terminating atmo failed", err)
+	}
+	wg.Done()
+	l.Warn("terminated atmo")
+
+	l.Info("shutdown complete")
+	wg.Wait()
+	l.Info("wg wait in constd done")
 }
 
 func (c *constd) reconcileAtmo(errChan chan error) {
