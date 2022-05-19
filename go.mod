@@ -8,7 +8,7 @@ require (
 	github.com/sethvargo/go-envconfig v0.6.0
 	github.com/stretchr/testify v1.7.1
 	github.com/suborbital/atmo v0.4.7
-	github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501
+	github.com/suborbital/grav v0.5.1
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.6.0
 	github.com/testcontainers/testcontainers-go v0.13.0
@@ -65,7 +65,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/schollz/peerdiscovery v1.6.10 // indirect
+	github.com/schollz/peerdiscovery v1.6.11 // indirect
 	github.com/second-state/WasmEdge-go v0.9.0-rc5 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
