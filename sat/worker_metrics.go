@@ -9,7 +9,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-type MetricsResponse struct {
+type WorkerMetricsResponse struct {
 	Scheduler rt.ScalerMetrics `json:"scheduler"`
 }
 
@@ -21,7 +21,7 @@ func (s *Sat) metricsHandler() vk.HandlerFunc {
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
-		resp := &MetricsResponse{
+		resp := &WorkerMetricsResponse{
 			Scheduler: *metrics,
 		}
 
