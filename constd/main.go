@@ -3,20 +3,20 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
 	"runtime"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-envconfig"
 
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/vektor/vlog"
 
 	"github.com/suborbital/sat/constd/config"
 	"github.com/suborbital/sat/constd/exec"
-)
-
-const (
-	atmoPort = "8080"
 )
 
 type constd struct {
@@ -27,7 +27,7 @@ type constd struct {
 }
 
 func main() {
-	conf, err := config.Parse(os.Args[1:])
+	conf, err := config.Parse(os.Args[1:], envconfig.OsLookuper())
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to loadConfig"))
 	}
@@ -35,6 +35,9 @@ func main() {
 	l := vlog.Default(
 		vlog.EnvPrefix("CONSTD"),
 	)
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	c := &constd{
 		logger: l,
@@ -45,20 +48,45 @@ func main() {
 
 	appSource, errChan := c.setupAppSource()
 
-	// main event loop
-	go func() {
-		for {
-			c.reconcileAtmo(errChan)
-			c.reconcileConstellation(appSource, errChan)
+	wg := sync.WaitGroup{}
 
-			time.Sleep(time.Second)
+	wg.Add(2)
+loop:
+	for {
+		select {
+		case <-shutdown:
+			c.logger.Info("terminating constd")
+			break loop
+		case err = <-errChan:
+			c.logger.Error(err)
+			log.Fatal(errors.Wrap(err, "encountered error"))
+		default:
+			break
 		}
-	}()
 
-	// assuming nothing above throws an error, this will block forever
-	for err = range errChan {
-		log.Fatal(errors.Wrap(err, "encountered error"))
+		c.reconcileAtmo(errChan)
+		c.reconcileConstellation(appSource, errChan)
+
+		time.Sleep(time.Second)
 	}
+
+	l.Info("shutting down")
+
+	for _, s := range c.sats {
+		err = s.terminate()
+		if err != nil {
+			log.Fatal("terminating sats failed", err)
+		}
+	}
+	wg.Done()
+
+	err = c.atmo.terminate()
+	if err != nil {
+		log.Fatal("terminating atmo failed", err)
+	}
+	wg.Done()
+	wg.Wait()
+	l.Info("shutdown complete")
 }
 
 func (c *constd) reconcileAtmo(errChan chan error) {
@@ -70,7 +98,7 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 	c.logger.Info("launching atmo")
 
 	atmoEnv := []string{
-		"ATMO_HTTP_PORT=" + atmoPort,
+		"ATMO_HTTP_PORT=" + c.config.AtmoPort,
 		"ATMO_CONTROL_PLANE=" + c.config.ControlPlane,
 		"ATMO_ENV_TOKEN=" + c.config.EnvToken,
 	}
@@ -80,7 +108,7 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 	}
 
 	uuid, pid, err := exec.Run(
-		atmoCommand(c.config, atmoPort),
+		atmoCommand(c.config, c.config.AtmoPort),
 		atmoEnv...,
 	)
 
@@ -88,7 +116,7 @@ func (c *constd) reconcileAtmo(errChan chan error) {
 		errChan <- errors.Wrap(err, "failed to Run Atmo")
 	}
 
-	c.atmo.add("atmo-proxy", atmoPort, uuid, pid)
+	c.atmo.add("atmo-proxy", c.config.AtmoPort, uuid, pid)
 }
 
 func (c *constd) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
@@ -178,8 +206,7 @@ func (c *constd) setupAppSource() (appsource.AppSource, chan error) {
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
 	if c.config.ControlPlane == config.DefaultControlPlane {
-		appSource, errChan := startAppSourceServer(c.config.BundlePath)
-		return appSource, errChan
+		return startAppSourceServer(c.config.BundlePath)
 	}
 
 	appSource := appsource.NewHTTPSource(c.config.ControlPlane)

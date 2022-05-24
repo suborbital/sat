@@ -27,7 +27,7 @@ type IntegrationSuite struct {
 }
 
 // TestIntegrationSuite gets run from go's test framework that kicks off the suite.
-func TestIntegrationSuite(t *testing.T) {
+func pppTestIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(IntegrationSuite))
 }
 
@@ -53,8 +53,13 @@ func (i *IntegrationSuite) SetupSuite() {
 			Cmd: []string{
 				"sat", "/runnables/hello-echo/hello-echo.wasm",
 			},
-			BindMounts: map[string]string{
-				"/runnables": satWorkingDir,
+			Mounts: []tc.ContainerMount{
+				{
+					Source: tc.DockerBindMountSource{
+						HostPath: satWorkingDir,
+					},
+					Target: tc.ContainerMountTarget("/runnables"),
+				},
 			},
 			AutoRemove: true,
 			WaitingFor: wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithMethod(http.MethodPost).WithBody(bytes.NewBuffer([]byte(`hi`))),

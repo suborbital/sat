@@ -4,7 +4,6 @@ FROM golang:1.18 as builder
 
 COPY --from=wasmtime /tmp/wasmtime/libwasmtime.a /usr/local/lib
 
-RUN mkdir -p /go/sat
 WORKDIR /go/sat
 
 # Get dependencies first

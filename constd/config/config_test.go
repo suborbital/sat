@@ -1,9 +1,9 @@
 package config_test
 
 import (
-	"os"
 	"testing"
 
+	"github.com/sethvargo/go-envconfig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
@@ -27,6 +27,7 @@ func (cts *ConfigTestSuite) TestParse() {
 				"CONSTD_EXEC_MODE":     "metal",
 				"CONSTD_SAT_VERSION":   "1.0.2",
 				"CONSTD_ATMO_VERSION":  "3.4.5",
+				"CONSTD_ATMO_PORT":     "18235",
 				"CONSTD_CONTROL_PLANE": "controlplane.com:16384",
 				"CONSTD_ENV_TOKEN":     "envtoken.isajwt.butnotreally",
 				"CONSTD_UPSTREAM_HOST": "192.168.1.33:9888",
@@ -36,6 +37,7 @@ func (cts *ConfigTestSuite) TestParse() {
 				ExecMode:     "metal",
 				SatTag:       "1.0.2",
 				AtmoTag:      "3.4.5",
+				AtmoPort:     "18235",
 				ControlPlane: "controlplane.com:16384",
 				EnvToken:     "envtoken.isajwt.butnotreally",
 				UpstreamHost: "192.168.1.33:9888",
@@ -51,6 +53,7 @@ func (cts *ConfigTestSuite) TestParse() {
 				ExecMode:     "docker",
 				SatTag:       "latest",
 				AtmoTag:      "latest",
+				AtmoPort:     "8080",
 				ControlPlane: config.DefaultControlPlane,
 				EnvToken:     "",
 				UpstreamHost: "",
@@ -67,25 +70,11 @@ func (cts *ConfigTestSuite) TestParse() {
 	}
 	for _, tt := range tests {
 		cts.Run(tt.name, func() {
-			cts.SetupTest()
 			var err error
-
-			for k, v := range tt.setEnvs {
-				err = os.Setenv(k, v)
-				if err != nil {
-					cts.FailNowf(
-						"set environment variable",
-						"tried to set [%s] to [%s], got error [%s]",
-						k,
-						v,
-						err,
-					)
-				}
-			}
 
 			subTestT := cts.T()
 
-			got, err := config.Parse(tt.args)
+			got, err := config.Parse(tt.args, envconfig.MapLookuper(tt.setEnvs))
 
 			tt.wantErr(subTestT, err)
 			cts.Equal(tt.want, got)

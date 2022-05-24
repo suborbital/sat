@@ -38,7 +38,7 @@ func registerWithControlPlane(conf config.Config) error {
 	registerURL := fmt.Sprintf("%s/api/v1/upstream/register", conf.ControlPlane)
 
 	for _, ip := range selfIPs {
-		upstreamURL, err := url.Parse(fmt.Sprintf("http://%s:%s", ip.String(), atmoPort))
+		upstreamURL, err := url.Parse(fmt.Sprintf("http://%s:%s", ip.String(), conf.AtmoPort))
 		if err != nil {
 			return errors.Wrap(err, "failed to Parse")
 		}

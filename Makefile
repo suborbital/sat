@@ -31,7 +31,7 @@ run:
 test:
 	go test -v ./...
 
-int:
+int: constd
 	go test -v ./tests --tags=integration
 # CONSTD TARGETS
 
