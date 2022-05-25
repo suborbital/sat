@@ -13,7 +13,7 @@ type WorkerMetricsResponse struct {
 	Scheduler rt.ScalerMetrics `json:"scheduler"`
 }
 
-func (s *Sat) metricsHandler() vk.HandlerFunc {
+func (s *Sat) workerMetricsHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		metrics, err := s.exec.Metrics()
 		if err != nil {

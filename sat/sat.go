@@ -3,11 +3,15 @@ package sat
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/go-kit/kit/metrics/prometheus"
 	"github.com/pkg/errors"
+	stdPrometheus "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -20,6 +24,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 
+	"github.com/suborbital/sat/sat/metrics"
 	"github.com/suborbital/sat/sat/process"
 )
 
@@ -31,14 +36,16 @@ const (
 type Sat struct {
 	jobName string // the job name / FQFN
 
-	config    *Config
-	vektor    *vk.Server
-	grav      *grav.Grav
-	pod       *grav.Pod
-	transport *websocket.Transport
-	exec      *executor.Executor
-	log       *vlog.Logger
-	tracer    trace.Tracer
+	config       *Config
+	vektor       *vk.Server
+	grav         *grav.Grav
+	pod          *grav.Pod
+	transport    *websocket.Transport
+	exec         *executor.Executor
+	log          *vlog.Logger
+	tracer       trace.Tracer
+	metrics      metrics.Metrics
+	systemServer *http.Server
 }
 
 type loggerScope struct {
@@ -85,13 +92,46 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		traceProvider = trace.NewNoopTracerProvider()
 	}
 
+	// set up metrics
+	m := metrics.Metrics{
+		FunctionExecutions: prometheus.NewCounterFrom(stdPrometheus.CounterOpts{
+			Namespace: "suborbital",
+			Subsystem: "sat",
+			Name:      "function_execution",
+			Help:      "How many times did we execute a function",
+		}, []string{}),
+		FunctionTime: prometheus.NewHistogramFrom(stdPrometheus.HistogramOpts{
+			Namespace: "suborbital",
+			Subsystem: "sat",
+			Name:      "function_execution_time",
+			Help:      "How long did we spend executing functions",
+		}, []string{}),
+	}
+
+	systemMux := http.NewServeMux()
+	systemMux.Handle("/metrics", promhttp.HandlerFor(
+		stdPrometheus.DefaultGatherer,
+		promhttp.HandlerOpts{
+			// Opt into OpenMetrics to support exemplars.
+			EnableOpenMetrics: true,
+		},
+	))
+
+	systemServer := http.Server{
+		Addr:        ":4000",
+		Handler:     systemMux,
+		ReadTimeout: 5 * time.Second,
+	}
+
 	sat := &Sat{
-		jobName:   config.JobType,
-		config:    config,
-		transport: transport,
-		exec:      exec,
-		log:       config.Logger,
-		tracer:    traceProvider.Tracer("sat"),
+		jobName:      config.JobType,
+		config:       config,
+		transport:    transport,
+		exec:         exec,
+		log:          config.Logger,
+		tracer:       traceProvider.Tracer("sat"),
+		metrics:      m,
+		systemServer: &systemServer,
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
@@ -111,7 +151,7 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 	// if a transport is configured, enable grav and metrics endpoints, otherwise enable server mode
 	if sat.transport != nil {
 		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
-		sat.vektor.GET("/meta/metrics", sat.metricsHandler())
+		sat.vektor.GET("/meta/metrics", sat.workerMetricsHandler())
 	} else {
 		// allow any HTTP method
 		sat.vektor.GET("/*any", sat.handler(exec))
@@ -133,6 +173,12 @@ func (s *Sat) Start() error {
 	go func() {
 		if err := s.vektor.Start(); err != nil {
 			vektorError <- err
+		}
+	}()
+
+	go func() {
+		if err := s.systemServer.ListenAndServe(); err != nil {
+			log.Fatalf("could not start system server: %s", err.Error())
 		}
 	}()
 
@@ -176,7 +222,6 @@ func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
 	// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
 	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
-
 	if s.transport != nil {
 		if err := s.grav.Withdraw(); err != nil {
 			s.log.Warn("encountered error during Withdraw, will proceed:", err.Error())
@@ -195,6 +240,13 @@ func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
 
 	if err := s.vektor.StopCtx(ctx); err != nil {
 		return errors.Wrap(err, "sat.vektor.StopCtx")
+	}
+
+	systemShutdownCtx, systemShutdownCtxCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer systemShutdownCtxCancel()
+
+	if err := s.systemServer.Shutdown(systemShutdownCtx); err != nil {
+		s.log.Error(err)
 	}
 
 	s.log.Warn("handled signal, continuing shutdown", sig.String())
