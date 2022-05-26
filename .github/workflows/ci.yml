@@ -41,10 +41,16 @@ jobs:
             ${{ runner.os }}-go-
       - run: go mod download
 
-      - name: Run stdin test
+      - name: Build sat
         run: |
           make sat
+
+      - name: Build constd
+        run: |
           make constd
+
+      - name: Run stdin test
+        run: |
           echo "world" | .bin/sat --stdin ./examples/hello-echo/hello-echo.wasm
 
       - name: Run Go tests
@@ -55,6 +61,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v2
 
       - name: Build sat image
@@ -62,8 +69,14 @@ jobs:
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          push: false
+          load: true
           tags: suborbital/sat:dev
+
+      - name: Test sat container
+        run: |
+          docker run -id -e SAT_HTTP_PORT=8080 -p 8080:8080 -v $(pwd)/examples:/examples suborbital/sat:dev sat /examples/hello-echo/hello-echo.wasm
+          sleep 1
+          curl -s localhost:8080 -d 'world'
 
   release-bin:
     if: startsWith(github.ref, 'refs/tags/v')
