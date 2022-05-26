@@ -34,6 +34,10 @@ type Version struct {
 	Data string `env:"SAT_RUNNABLE_VERSION"`
 }
 
+type MetricsConfig struct {
+	ServiceName string `env:"SERVICENAME,default=sat"`
+}
+
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
 // have a prefix of SAT_TRACER_ specified in the parent Options struct.
 type TracerConfig struct {
