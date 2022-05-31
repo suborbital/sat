@@ -70,4 +70,9 @@ lint:
 importfix:
 	docker compose up lintfixer
 
-.PHONY: sat constd
+runlocal:
+	SAT_METRICS_ENDPOINT=localhost:4317 \
+	SAT_METRICS_SERVICENAME=sat \
+	./.bin/sat ./examples/hello-echo/hello-echo.wasm
+
+.PHONY: sat constd runlocal
