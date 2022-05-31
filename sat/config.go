@@ -3,7 +3,6 @@ package sat
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -80,8 +79,6 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "configFromRunnableArg options.Resolve")
 	}
-
-	log.Printf("okay, we're back in config, opts: %#v\n\n", opts.MetricsConfig)
 
 	// first, determine if we need to connect to a control plane
 	controlPlane := ""

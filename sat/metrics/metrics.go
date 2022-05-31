@@ -2,8 +2,6 @@ package metrics
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,8 +16,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/suborbital/vektor/vlog"
 
 	"github.com/suborbital/sat/sat/options"
 )
@@ -49,11 +45,7 @@ func NewTimer() Timer {
 //
 // This structure is configured to be in the global scope, and that's where all other meters will send their data to be
 // picked up and sent off to the collector at specified intervals.
-func SetupMetricsProvider(config options.MetricsConfig, logger *vlog.Logger) error {
-	l := logger.CreateScoped("setup.metrics")
-	l.Info(fmt.Sprintf("grpc dialcontext with endpoint: %s", config.Endpoint))
-	l.Info(fmt.Sprintf("The entire config object:\n\n%#v\n\n", config))
-
+func SetupMetricsProvider(config options.MetricsConfig) error {
 	grpcCtx, grpcCtxCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer grpcCtxCancel()
 
@@ -61,9 +53,6 @@ func SetupMetricsProvider(config options.MetricsConfig, logger *vlog.Logger) err
 	if err != nil {
 		return errors.Wrap(err, "grpc.DialContext")
 	}
-
-	l.Info("we have grpc dial context")
-	l.Info("creating exporter")
 
 	exporter, err := otlpmetricgrpc.New(
 		context.TODO(),
@@ -83,8 +72,6 @@ func SetupMetricsProvider(config options.MetricsConfig, logger *vlog.Logger) err
 		return errors.Wrap(err, "otlpmetricgrpc.New")
 	}
 
-	l.Info("we have an exporter")
-	l.Info("creating controller")
 	cont := controller.New(
 		processor.NewFactory(
 			simple.NewWithInexpensiveDistribution(),
@@ -93,15 +80,13 @@ func SetupMetricsProvider(config options.MetricsConfig, logger *vlog.Logger) err
 		controller.WithExporter(exporter),
 		controller.WithCollectPeriod(3*time.Second),
 	)
+
 	if err := cont.Start(context.Background()); err != nil {
-		log.Fatalln("failed to start the metric controller:", err)
+		return errors.Wrap(err, "metric controller Start")
 	}
-	l.Info("we have a controller")
-	l.Info("setting global meter provider")
 
 	global.SetMeterProvider(cont)
 
-	l.Info("set the global meter provider")
 	return nil
 }
 

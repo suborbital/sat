@@ -25,10 +25,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("what are the resolved confs\n\n%#v\n", conf)
-
-	log.Printf("uh, what\n\n%#v", os.Environ())
-
 	if conf.UseStdin {
 		if err = runStdIn(conf); err != nil {
 			conf.Logger.Error(errors.Wrap(err, "startup in StdIn"))
@@ -54,13 +50,10 @@ func run(conf *sat.Config) error {
 		return errors.Wrap(err, "setup tracing")
 	}
 
-	logger.Info("setting up metrics")
-	err = metrics.SetupMetricsProvider(conf.MetricsConfig, conf.Logger)
+	err = metrics.SetupMetricsProvider(conf.MetricsConfig)
 	if err != nil {
 		return errors.Wrap(err, "SetupMetricsProvider")
 	}
-
-	logger.Info("set up metrics")
 
 	defer traceProvider.Shutdown(context.Background())
 
@@ -137,7 +130,6 @@ func runStdIn(conf *sat.Config) error {
 func createProcFile(log *vlog.Logger, conf *sat.Config) error {
 	// write a file to disk which describes this instance
 	info := process.NewInfo(conf.Port, conf.JobType)
-	log.Info("info to be written", info)
 	if err := info.Write(conf.ProcUUID); err != nil {
 		return errors.Wrap(err, "failed to Write process info")
 	}

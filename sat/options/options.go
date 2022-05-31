@@ -2,8 +2,6 @@ package options
 
 import (
 	"context"
-	"log"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
@@ -77,19 +75,9 @@ func Resolve(lookuper envconfig.Lookuper) (Options, error) {
 
 	var opts Options
 
-	log.Printf("\n\nmetrics endpoint: %s\nmetrics servicename: %s\n\n", os.Getenv("SAT_METRICS_ENDPOINT"), os.Getenv("SAT_METRICS_SERVICENAME"))
-
-	endpoint, _ := os.LookupEnv("SAT_METRICS_ENDPOINT")
-	servicename, _ := os.LookupEnv("SAT_METRICS_SERVICENAME")
-
-	log.Printf("\n\nmetrics endpoint same as above but os.LookupEnv: %s\nmetrics servicename: %s\n\n", endpoint, servicename)
-
 	if err := envconfig.ProcessWith(context.Background(), &opts, lookuper); err != nil {
-		log.Printf("okay, is this an error being returned? %s", err.Error())
 		return Options{}, errors.Wrap(err, "sat options parsing")
 	}
-
-	log.Printf("was parsing even successful? %#v\n\n", opts.MetricsConfig)
 
 	return opts, nil
 }
