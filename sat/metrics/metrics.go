@@ -14,8 +14,6 @@ import (
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/suborbital/sat/sat/options"
 )
@@ -46,14 +44,6 @@ func NewTimer() Timer {
 // This structure is configured to be in the global scope, and that's where all other meters will send their data to be
 // picked up and sent off to the collector at specified intervals.
 func SetupMetricsProvider(config options.MetricsConfig) error {
-	grpcCtx, grpcCtxCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer grpcCtxCancel()
-
-	conn, err := grpc.DialContext(grpcCtx, config.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		return errors.Wrap(err, "grpc.DialContext")
-	}
-
 	exporter, err := otlpmetricgrpc.New(
 		context.TODO(),
 		otlpmetricgrpc.WithTimeout(5*time.Second),
@@ -63,8 +53,8 @@ func SetupMetricsProvider(config options.MetricsConfig) error {
 			MaxInterval:     10 * time.Second,
 			MaxElapsedTime:  30 * time.Second,
 		}),
-		otlpmetricgrpc.WithServiceConfig(config.ServiceName),
-		otlpmetricgrpc.WithGRPCConn(conn),
+		otlpmetricgrpc.WithEndpoint(config.Endpoint),
+		otlpmetricgrpc.WithInsecure(),
 	)
 	if err != nil {
 		return errors.Wrap(err, "otlpmetricgrpc.New")
