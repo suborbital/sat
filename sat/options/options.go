@@ -38,7 +38,7 @@ type Version struct {
 
 type MetricsConfig struct {
 	ServiceName string `env:"SERVICENAME,default=sat"`
-	Endpoint    string `env:"ENDPOINT,default=localhost:55681"`
+	Endpoint    string `env:"ENDPOINT"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
