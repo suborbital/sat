@@ -57,8 +57,6 @@ func SetupMetricsProvider(config options.MetricsConfig) error {
 	exporter, err := otlpmetricgrpc.New(
 		context.TODO(),
 		otlpmetricgrpc.WithTimeout(5*time.Second),
-		otlpmetricgrpc.WithEndpoint(config.Endpoint),
-		otlpmetricgrpc.WithInsecure(),
 		otlpmetricgrpc.WithRetry(otlpmetricgrpc.RetryConfig{
 			Enabled:         true,
 			InitialInterval: 2 * time.Second,
