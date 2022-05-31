@@ -3,6 +3,7 @@ package sat
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -43,6 +44,7 @@ type Config struct {
 	Logger          *vlog.Logger
 	ProcUUID        string
 	TracerConfig    satOptions.TracerConfig
+	MetricsConfig   satOptions.MetricsConfig
 }
 
 type satInfo struct {
@@ -78,6 +80,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "configFromRunnableArg options.Resolve")
 	}
+
+	log.Printf("okay, we're back in config, opts: %#v\n\n", opts.MetricsConfig)
 
 	// first, determine if we need to connect to a control plane
 	controlPlane := ""
@@ -179,6 +183,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		ControlPlaneUrl: controlPlane,
 		Logger:          logger,
 		TracerConfig:    opts.TracerConfig,
+		MetricsConfig:   opts.MetricsConfig,
 		ProcUUID:        string(opts.ProcUUID),
 	}
 

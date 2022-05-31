@@ -15,6 +15,7 @@ import (
 	"github.com/suborbital/vektor/vlog"
 
 	"github.com/suborbital/sat/sat"
+	"github.com/suborbital/sat/sat/metrics"
 	"github.com/suborbital/sat/sat/process"
 )
 
@@ -23,6 +24,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Printf("what are the resolved confs\n\n%#v\n", conf)
+
+	log.Printf("uh, what\n\n%#v", os.Environ())
 
 	if conf.UseStdin {
 		if err = runStdIn(conf); err != nil {
@@ -48,6 +53,14 @@ func run(conf *sat.Config) error {
 	if err != nil {
 		return errors.Wrap(err, "setup tracing")
 	}
+
+	logger.Info("setting up metrics")
+	err = metrics.SetupMetricsProvider(conf.MetricsConfig, conf.Logger)
+	if err != nil {
+		return errors.Wrap(err, "SetupMetricsProvider")
+	}
+
+	logger.Info("set up metrics")
 
 	defer traceProvider.Shutdown(context.Background())
 

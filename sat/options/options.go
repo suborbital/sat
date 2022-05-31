@@ -2,6 +2,8 @@ package options
 
 import (
 	"context"
+	"log"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
@@ -15,7 +17,9 @@ type Options struct {
 	ControlPlane *ControlPlane `env:",noinit"`
 	Ident        *Ident        `env:",noinit"`
 	Version      *Version      `env:",noinit"`
-	TracerConfig TracerConfig  `env:",prefix=SAT_TRACER_"`
+
+	TracerConfig  TracerConfig  `env:",prefix=SAT_TRACER_"`
+	MetricsConfig MetricsConfig `env:",prefix=SAT_METRICS_"`
 }
 
 // ControlPlane is a struct, so we can use a pointer, so we can check whether it's been set in config. If set, it holds
@@ -36,6 +40,7 @@ type Version struct {
 
 type MetricsConfig struct {
 	ServiceName string `env:"SERVICENAME,default=sat"`
+	Endpoint    string `env:"ENDPOINT,default=localhost:55681"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
@@ -72,9 +77,19 @@ func Resolve(lookuper envconfig.Lookuper) (Options, error) {
 
 	var opts Options
 
+	log.Printf("\n\nmetrics endpoint: %s\nmetrics servicename: %s\n\n", os.Getenv("SAT_METRICS_ENDPOINT"), os.Getenv("SAT_METRICS_SERVICENAME"))
+
+	endpoint, _ := os.LookupEnv("SAT_METRICS_ENDPOINT")
+	servicename, _ := os.LookupEnv("SAT_METRICS_SERVICENAME")
+
+	log.Printf("\n\nmetrics endpoint same as above but os.LookupEnv: %s\nmetrics servicename: %s\n\n", endpoint, servicename)
+
 	if err := envconfig.ProcessWith(context.Background(), &opts, lookuper); err != nil {
+		log.Printf("okay, is this an error being returned? %s", err.Error())
 		return Options{}, errors.Wrap(err, "sat options parsing")
 	}
+
+	log.Printf("was parsing even successful? %#v\n\n", opts.MetricsConfig)
 
 	return opts, nil
 }
