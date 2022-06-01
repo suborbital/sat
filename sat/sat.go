@@ -53,7 +53,7 @@ var headless = false
 // New initializes Reactr, Vektor, and Grav in a Sat instance
 // if config.UseStdin is true, only Reactr will be created
 // if traceProvider is nil, the default NoopTraceProvider will be used
-func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
+func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
 	wruntime.UseInternalLogger(config.Logger)
 
 	exec := executor.NewWithGrav(config.Logger, nil, nil)
@@ -81,15 +81,6 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 	var transport *websocket.Transport
 	if config.ControlPlaneUrl != "" {
 		transport = websocket.New()
-	}
-
-	if traceProvider == nil {
-		traceProvider = trace.NewNoopTracerProvider()
-	}
-
-	mtx, err := metrics.ConfigureMetrics()
-	if err != nil {
-		return nil, errors.Wrap(err, "metrics.ConfigureMetrics")
 	}
 
 	sat := &Sat{

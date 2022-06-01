@@ -16,6 +16,7 @@ import (
 
 	"github.com/suborbital/sat/sat"
 	"github.com/suborbital/sat/sat/metrics"
+	"github.com/suborbital/sat/sat/options"
 	"github.com/suborbital/sat/sat/process"
 )
 
@@ -50,15 +51,15 @@ func run(conf *sat.Config) error {
 		return errors.Wrap(err, "setup tracing")
 	}
 
-	err = metrics.SetupMetricsProvider(conf.MetricsConfig)
+	mtx, err := metrics.ResolveMetrics(conf.MetricsConfig)
 	if err != nil {
-		return errors.Wrap(err, "SetupMetricsProvider")
+		return errors.Wrap(err, "metrics.ResolveMetrics")
 	}
 
 	defer traceProvider.Shutdown(context.Background())
 
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
-	s, err := sat.New(conf, traceProvider)
+	s, err := sat.New(conf, traceProvider, mtx)
 	if err != nil {
 		return errors.Wrap(err, "sat.New")
 	}
@@ -115,8 +116,13 @@ func run(conf *sat.Config) error {
 func runStdIn(conf *sat.Config) error {
 	noopTracer := trace.NewNoopTracerProvider()
 
+	mtx, err := metrics.ResolveMetrics(options.MetricsConfig{Type: "none"})
+	if err != nil {
+		return errors.Wrap(err, "metrics.ResolveMetrics with noop type")
+	}
+
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
-	s, err := sat.New(conf, noopTracer)
+	s, err := sat.New(conf, noopTracer, mtx)
 	if err != nil {
 		return errors.Wrap(err, "sat.New")
 	}

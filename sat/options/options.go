@@ -37,8 +37,13 @@ type Version struct {
 }
 
 type MetricsConfig struct {
-	ServiceName string `env:"SERVICENAME,default=sat"`
-	Endpoint    string `env:"ENDPOINT"`
+	Type        string             `env:"TYPE,default=none"`
+	ServiceName string             `env:"SERVICENAME,default=sat"`
+	OtelMetrics *OtelMetricsConfig `env:",prefix=OTEL_,noinit"`
+}
+
+type OtelMetricsConfig struct {
+	Endpoint string `env:"ENDPOINT"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
