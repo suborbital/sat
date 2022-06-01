@@ -71,7 +71,8 @@ importfix:
 	docker compose up lintfixer
 
 runlocal:
-	SAT_METRICS_ENDPOINT=localhost:4317 \
+	SAT_METRICS_OTEL_ENDPOINT=localhost:4317 \
+	SAT_METRICS_TYPE=otel \
 	SAT_METRICS_SERVICENAME=sat \
 	./.bin/sat ./examples/hello-echo/hello-echo.wasm
 
