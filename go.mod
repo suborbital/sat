@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/sethvargo/go-envconfig v0.6.1
+	github.com/sethvargo/go-envconfig v0.6.2
 	github.com/stretchr/testify v1.7.2
 	github.com/suborbital/atmo v0.4.7
 	github.com/suborbital/grav v0.5.1
