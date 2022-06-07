@@ -51,7 +51,10 @@ func run(conf *sat.Config) error {
 		return errors.Wrap(err, "setup tracing")
 	}
 
-	mtx, err := metrics.ResolveMetrics(conf.MetricsConfig)
+	mctx, mcancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer mcancel()
+
+	mtx, err := metrics.ResolveMetrics(mctx, conf.MetricsConfig)
 	if err != nil {
 		return errors.Wrap(err, "metrics.ResolveMetrics")
 	}
@@ -116,7 +119,7 @@ func run(conf *sat.Config) error {
 func runStdIn(conf *sat.Config) error {
 	noopTracer := trace.NewNoopTracerProvider()
 
-	mtx, err := metrics.ResolveMetrics(options.MetricsConfig{Type: "none"})
+	mtx, err := metrics.ResolveMetrics(context.Background(), options.MetricsConfig{Type: "none"})
 	if err != nil {
 		return errors.Wrap(err, "metrics.ResolveMetrics with noop type")
 	}

@@ -3,6 +3,7 @@
 package metrics
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
@@ -29,10 +30,10 @@ func NewTimer() Timer {
 	return Timer{start: time.Now()}
 }
 
-func ResolveMetrics(config options.MetricsConfig) (Metrics, error) {
+func ResolveMetrics(ctx context.Context, config options.MetricsConfig) (Metrics, error) {
 	switch config.Type {
 	case "otel":
-		return setupOtelMetrics(config)
+		return setupOtelMetrics(ctx, config)
 	default:
 		return SetupNoopMetrics(), nil
 	}

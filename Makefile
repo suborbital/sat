@@ -74,6 +74,12 @@ runlocal:
 	SAT_METRICS_OTEL_ENDPOINT=localhost:4317 \
 	SAT_METRICS_TYPE=otel \
 	SAT_METRICS_SERVICENAME=sat \
+	SAT_TRACER_TYPE=collector \
+	SAT_TRACER_SERVICENAME=sat-tracing \
+	SAT_TRACER_COLLECTOR_ENDPOINT=localhost:4317 \
 	./.bin/sat ./examples/hello-echo/hello-echo.wasm
+
+bombard:
+	hey -n 10000 -c 200 -m POST -d "kenobi" http://localhost:$(PORT)
 
 .PHONY: sat constd runlocal

@@ -1,4 +1,4 @@
-// Package otel provides implementation of metrics with otel exporter / gauges.
+// Package metrics provides implementation of metrics with otel exporter / gauges.
 package metrics
 
 import (
@@ -6,55 +6,36 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/unit"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+
+	"github.com/suborbital/go-kit/observability"
 
 	"github.com/suborbital/sat/sat/options"
 )
 
-// setupOtelMetrics takes in an options.MetricsConfig struct and a logger to put together the structure of getting
-// measured data onto the collector. It does not set up the actual meters that we need to use to actually measure
-// anything, that's the job of ConfigureMetrics.
-//
-// This structure is configured to be in the global scope, and that's where all other meters will send their data to be
-// picked up and sent off to the collector at specified intervals.
-func setupOtelMetrics(config options.MetricsConfig) (Metrics, error) {
-	exporter, err := otlpmetricgrpc.New(
-		context.Background(),
-		otlpmetricgrpc.WithTimeout(5*time.Second),
-		otlpmetricgrpc.WithRetry(otlpmetricgrpc.RetryConfig{
-			Enabled:         true,
-			InitialInterval: 2 * time.Second,
-			MaxInterval:     10 * time.Second,
-			MaxElapsedTime:  30 * time.Second,
-		}),
-		otlpmetricgrpc.WithEndpoint(config.OtelMetrics.Endpoint),
-		otlpmetricgrpc.WithInsecure(),
-	)
+const (
+	otelCollectionPeriod = 3 * time.Second
+)
+
+// setupOtelMetrics delegates setting up the meter and attaching it to a global scope to the observability package in
+// the suborbital/go-kit module.
+func setupOtelMetrics(ctx context.Context, config options.MetricsConfig) (Metrics, error) {
+	if config.OtelMetrics == nil {
+		return Metrics{}, errors.New("resolving otel metrics is missing configuration values")
+	}
+
+	conn, err := observability.GrpcConnection(ctx, config.OtelMetrics.Endpoint)
 	if err != nil {
-		return Metrics{}, errors.Wrap(err, "otlpmetricgrpc.New")
+		return Metrics{}, errors.Wrap(err, "otel metrics grpc connection")
 	}
 
-	cont := controller.New(
-		processor.NewFactory(
-			simple.NewWithInexpensiveDistribution(),
-			exporter,
-		),
-		controller.WithExporter(exporter),
-		controller.WithCollectPeriod(3*time.Second),
-	)
-
-	if err := cont.Start(context.Background()); err != nil {
-		return Metrics{}, errors.Wrap(err, "metric controller Start")
+	err = observability.OtelMeter(ctx, conn, otelCollectionPeriod)
+	if err != nil {
+		return Metrics{}, errors.Wrap(err, "observability.OtelMeter")
 	}
-
-	global.SetMeterProvider(cont)
 
 	return configureMetrics()
 }
