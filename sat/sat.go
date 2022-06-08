@@ -10,15 +10,15 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/rt"
-	"github.com/suborbital/reactr/rwasm"
-	wruntime "github.com/suborbital/reactr/rwasm/runtime"
+	"github.com/suborbital/sat/engine/moduleref"
+	"github.com/suborbital/sat/engine/runtime"
+	"github.com/suborbital/sat/sat/executor"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/scheduler"
 
 	"github.com/suborbital/sat/sat/process"
 )
@@ -34,7 +34,6 @@ type Sat struct {
 	config    *Config
 	vektor    *vk.Server
 	grav      *grav.Grav
-	pod       *grav.Pod
 	transport *websocket.Transport
 	exec      *executor.Executor
 	log       *vlog.Logger
@@ -52,37 +51,45 @@ var headless = false
 // if config.UseStdin is true, only Reactr will be created
 // if traceProvider is nil, the default NoopTraceProvider will be used
 func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
-	wruntime.UseInternalLogger(config.Logger)
+	runtime.UseInternalLogger(config.Logger)
 
-	exec := executor.NewWithGrav(config.Logger, nil, nil)
-
-	var runner rt.Runnable
-	if config.Runnable != nil && len(config.Runnable.ModuleRef.Data) > 0 {
-		runner = rwasm.NewRunnerWithRef(config.Runnable.ModuleRef)
-	} else {
-		runner = rwasm.NewRunner(config.RunnableArg)
+	exec, err := executor.New(config.Logger, config.CapConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to executor.New")
 	}
 
-	err := exec.Register(
+	var runnable *moduleref.WasmModuleRef
+	if config.Runnable != nil && len(config.Runnable.ModuleRef.Data) > 0 {
+		runnable = moduleref.RefWithData(config.Runnable.ModuleRef.Name, config.Runnable.ModuleRef.FQFN, config.Runnable.ModuleRef.Data)
+	} else {
+		ref, err := refFromFilename("", "", config.RunnableArg)
+		if err != nil {
+			return nil, errors.Wrap(err, "faild to refFromFilename")
+		}
+
+		runnable = ref
+	}
+
+	err = exec.Register(
 		config.JobType,
-		runner,
-		&config.CapConfig,
-		rt.Autoscale(24),
-		rt.MaxRetries(0),
-		rt.RetrySeconds(0),
-		rt.PreWarm(),
+		runnable,
+		scheduler.Autoscale(24),
+		scheduler.MaxRetries(0),
+		scheduler.RetrySeconds(0),
+		scheduler.PreWarm(),
 	)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "exec.Register")
+	}
+
+	if traceProvider == nil {
+		traceProvider = trace.NewNoopTracerProvider()
 	}
 
 	var transport *websocket.Transport
 	if config.ControlPlaneUrl != "" {
 		transport = websocket.New()
-	}
-
-	if traceProvider == nil {
-		traceProvider = trace.NewNoopTracerProvider()
 	}
 
 	sat := &Sat{
@@ -126,7 +133,7 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 }
 
 // Start starts Sat's Vektor server and Grav discovery
-func (s *Sat) Start() error {
+func (s *Sat) Start(ctx context.Context) error {
 	vektorError := make(chan error, 1)
 
 	// start Vektor first so that the server is started up before Grav starts discovery
@@ -137,32 +144,16 @@ func (s *Sat) Start() error {
 	}()
 
 	if s.transport != nil {
-		// configure Grav to join the mesh for its appropriate application
-		// and broadcast its "interest" (i.e. the loaded function)
-		s.grav = grav.New(
-			grav.UseBelongsTo(s.config.Identifier),
-			grav.UseInterests(s.config.JobType),
-			grav.UseLogger(s.config.Logger),
-			grav.UseTransport(s.transport),
-			grav.UseDiscovery(local.New()),
-			grav.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
-		)
-
-		s.pod = s.grav.Connect()
-
-		// set up the Executor to listen for jobs and handle them
-		s.exec.UseGrav(s.grav)
-
-		if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
-			return errors.Wrap(err, "executor.ListenAndRun")
-		}
-
-		if err := connectStaticPeers(s.config.Logger, s.grav); err != nil {
-			return errors.Wrap(err, "failed to connectStaticPeers")
+		if err := s.setupGrav(); err != nil {
+			return errors.Wrap(err, "failed to setupGrav")
 		}
 	}
 
 	select {
+	case <-ctx.Done():
+		if err := s.Shutdown(); err != nil {
+			return errors.Wrap(err, "failed to Shutdown")
+		}
 	case err := <-vektorError:
 		if !errors.Is(err, http.ErrServerClosed) {
 			return errors.Wrap(err, "failed to start server")
@@ -172,7 +163,7 @@ func (s *Sat) Start() error {
 	return nil
 }
 
-func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
+func (s *Sat) Shutdown() error {
 	// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
 	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
@@ -190,18 +181,54 @@ func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
 	}
 
 	if err := process.Delete(s.config.ProcUUID); err != nil {
-		s.log.Warn("encountered error during process.Delete, will proceed:", err.Error())
+		s.log.Debug("encountered error during process.Delete, will proceed:", err.Error())
 	}
 
-	if err := s.vektor.StopCtx(ctx); err != nil {
-		return errors.Wrap(err, "sat.vektor.StopCtx")
+	stopCtx, _ := context.WithTimeout(context.Background(), time.Second)
+
+	if err := s.vektor.StopCtx(stopCtx); err != nil {
+		return errors.Wrap(err, "failed to StopCtx")
 	}
 
-	s.log.Warn("handled signal, continuing shutdown", sig.String())
+	return nil
+}
+
+func (s *Sat) setupGrav() error {
+	// configure Grav to join the mesh for its appropriate application
+	// and broadcast its "interest" (i.e. the loaded function)
+	s.grav = grav.New(
+		grav.UseBelongsTo(s.config.Identifier),
+		grav.UseInterests(s.config.JobType),
+		grav.UseLogger(s.config.Logger),
+		grav.UseMeshTransport(s.transport),
+		grav.UseDiscovery(local.New()),
+		grav.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
+	)
+
+	// set up the Executor to listen for jobs and handle them
+	s.exec.UseGrav(s.grav)
+
+	if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
+		return errors.Wrap(err, "executor.ListenAndRun")
+	}
+
+	if err := connectStaticPeers(s.config.Logger, s.grav); err != nil {
+		return errors.Wrap(err, "failed to connectStaticPeers")
+	}
+
 	return nil
 }
 
 // testStart returns Sat's internal server for testing purposes
 func (s *Sat) testServer() *vk.Server {
 	return s.vektor
+}
+
+func refFromFilename(name, fqfn, filename string) (*moduleref.WasmModuleRef, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to os.Open")
+	}
+
+	return moduleref.RefWithReader(name, fqfn, file), nil
 }

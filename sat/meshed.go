@@ -7,11 +7,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/velocity/scheduler"
+	"github.com/suborbital/velocity/server/coordinator/sequence"
+	"github.com/suborbital/velocity/server/request"
 )
 
 // handleFnResult is mounted onto exec.ListenAndRun...
@@ -36,7 +36,7 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 
 	ctx.Context = spanCtx
 
-	seq, err := sequence.FromJSON(req.SequenceJSON, req, s.exec, ctx)
+	seq, err := sequence.FromJSON(req.SequenceJSON, req, ctx)
 	if err != nil {
 		s.log.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
 		return
@@ -53,11 +53,11 @@ func (s *Sat) handleFnResult(msg grav.Message, result interface{}, fnErr error) 
 
 	// start evaluating the result of the function call
 	resp := &request.CoordinatedResponse{}
-	var runErr rt.RunErr
+	var runErr scheduler.RunErr
 	var execErr error
 
 	if fnErr != nil {
-		if fnRunErr, isRunErr := fnErr.(rt.RunErr); isRunErr {
+		if fnRunErr, isRunErr := fnErr.(scheduler.RunErr); isRunErr {
 			// great, it's a runErr
 			runErr = fnRunErr
 		} else {
@@ -124,9 +124,9 @@ func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
 
 	respMsg := grav.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
 
-	ctx.Log.Info("function", s.jobName, "completed, sending result message", respMsg.UUID())
+	ctx.Log.Debug("function", s.jobName, "completed, sending result message", respMsg.UUID())
 
-	if s.pod.Send(respMsg) == nil {
+	if s.exec.Send(respMsg) == nil {
 		return errors.New("failed to Send fnResult")
 	}
 
@@ -151,7 +151,7 @@ func (s *Sat) sendNextStep(_ grav.Message, seq *sequence.Sequence, req *request.
 
 	nextMsg := grav.NewMsgWithParentID(nextStep.Exec.FQFN, ctx.RequestID(), reqJSON)
 
-	ctx.Log.Info("sending next message", nextStep.Exec.FQFN, nextMsg.UUID())
+	ctx.Log.Debug("sending next message", nextStep.Exec.FQFN, nextMsg.UUID())
 
 	if err := s.grav.Tunnel(nextStep.Exec.FQFN, nextMsg); err != nil {
 		// nothing much we can do here

@@ -12,13 +12,12 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
-	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/atmo/fqfn"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/capabilities"
+	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/fqfn"
+	"github.com/suborbital/velocity/server/appsource"
+	"github.com/suborbital/velocity/server/options"
 
 	satOptions "github.com/suborbital/sat/sat/options"
 )
@@ -35,7 +34,7 @@ type Config struct {
 	PrettyName      string
 	Runnable        *directive.Runnable
 	Identifier      string
-	CapConfig       rcap.CapabilityConfig
+	CapConfig       capabilities.CapabilityConfig
 	Port            int
 	UseStdin        bool
 	ControlPlaneUrl string
@@ -88,7 +87,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	}
 
 	appClient := appsource.NewHTTPSource(controlPlane)
-	caps := rcap.DefaultConfigWithLogger(logger)
+	caps := capabilities.DefaultConfigWithLogger(logger)
 
 	if useControlPlane {
 		// configure the appSource not to wait if the controlPlane isn't available
@@ -119,7 +118,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 
 			runnable = cpRunnable
 
-			rendered, err := capabilities.ResolveFromSource(appClient, FQFN.Identifier, FQFN.Namespace, FQFN.Version, logger)
+			rendered, err := appsource.ResolveCapabilitiesFromSource(appClient, FQFN.Identifier, FQFN.Namespace, FQFN.Version, logger)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to capabilities.Render")
 			}
@@ -160,8 +159,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 			vlog.AppMeta(app{prettyName}),
 		)
 
-		logger.Info("configuring", jobType)
-		logger.Info("joining app", FQFN.Identifier)
+		logger.Debug("configuring", jobType)
+		logger.Debug("joining app", FQFN.Identifier)
 	} else {
 		logger.Debug("configuring", jobType)
 	}

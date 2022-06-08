@@ -1,6 +1,0 @@
-name: goodbye
-namespace: default
-lang: tinygo
-version: ""
-apiVersion: 0.13.1
-fqfnUri: ""

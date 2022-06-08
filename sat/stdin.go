@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/velocity/server/request"
 )
 
 // ExecFromStdin reads stdin, passes the data through the registered module, and writes the result to stdout.
