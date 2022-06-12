@@ -11,6 +11,12 @@ receivers:
 
 processors:
   batch:
+  memory_limiter:
+    # 75% of maximum memory up to 4G
+    limit_mib: 1536
+    # 25% of limit up to 2G
+    spike_limit_mib: 512
+    check_interval: 5s
 
 exporters:
   otlp:
@@ -28,3 +34,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [otlp, file]
+    metrics:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ otlp, file ]

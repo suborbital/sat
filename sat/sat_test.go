@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/suborbital/vektor/vtest"
+
+	"github.com/suborbital/sat/sat/metrics"
 )
 
 func TestEchoRequest(t *testing.T) {
@@ -103,7 +105,7 @@ func satForFile(filepath string) (*Sat, *trace.TracerProvider, error) {
 		return nil, nil, errors.Wrap(err, "setup tracing")
 	}
 
-	sat, err := New(config, traceProvider)
+	sat, err := New(config, traceProvider, metrics.SetupNoopMetrics())
 	if err != nil {
 		return nil, nil, err
 	}

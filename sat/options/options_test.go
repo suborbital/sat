@@ -32,6 +32,9 @@ func TestResolve(t *testing.T) {
 				"SAT_TRACER_HONEYCOMB_ENDPOINT": "api.honeycomb.io:443",
 				"SAT_TRACER_HONEYCOMB_APIKEY":   "hcapikey",
 				"SAT_TRACER_HONEYCOMB_DATASET":  "hcdataset",
+				"SAT_METRICS_TYPE":              "otel",
+				"SAT_METRICS_SERVICENAME":       "metricsservice",
+				"SAT_METRICS_OTEL_ENDPOINT":     "localhost:1111",
 			},
 			want: Options{
 				EnvToken:     "envtoken",
@@ -53,6 +56,11 @@ func TestResolve(t *testing.T) {
 						Dataset:  "hcdataset",
 					},
 				},
+				MetricsConfig: MetricsConfig{
+					Type:        "otel",
+					ServiceName: "metricsservice",
+					OtelMetrics: &OtelMetricsConfig{Endpoint: "localhost:1111"},
+				},
 			},
 			wantErr: assert.NoError,
 		},
@@ -71,6 +79,11 @@ func TestResolve(t *testing.T) {
 					TracerType:  "none",
 					ServiceName: "sat",
 					Probability: 0.5,
+				},
+				MetricsConfig: MetricsConfig{
+					Type:        "none",
+					ServiceName: "sat",
+					OtelMetrics: nil,
 				},
 			},
 			wantErr: assert.NoError,
