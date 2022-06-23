@@ -3,7 +3,7 @@ module github.com/suborbital/sat
 go 1.18
 
 require (
-	github.com/bytecodealliance/wasmtime-go v0.37.0
+	github.com/bytecodealliance/wasmtime-go v0.38.1
 	github.com/docker/go-connections v0.4.0
 	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.6
