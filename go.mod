@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-envconfig v0.7.0
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	github.com/suborbital/atmo v0.4.7
 	github.com/suborbital/grav v0.5.1
 	github.com/suborbital/reactr v0.15.1
