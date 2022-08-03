@@ -72,7 +72,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.9.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.18.0 // indirect
-	golang.org/x/crypto v0.0.0-20220516162934-403b01795ae8 // indirect
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
@@ -83,4 +83,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/bytecodealliance/wasmtime-go => github.com/suborbital/wasmtime-go v0.35.0-aarch64
+replace (
+	github.com/bytecodealliance/wasmtime-go => github.com/suborbital/wasmtime-go v0.35.0-aarch64
+	github.com/suborbital/atmo => ../atmo
+	github.com/suborbital/vektor => github.com/suborbital/vektor v0.5.3-0.20220711143042-68ea16ea5614
+)
