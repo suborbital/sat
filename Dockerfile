@@ -7,6 +7,8 @@ RUN go mod download
 COPY main.go .
 COPY Makefile .
 COPY ./sat ./sat
+COPY ./engine ./engine
+COPY ./api ./api
 RUN make sat/static
 
 
