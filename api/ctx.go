@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/suborbital/velocity/server/request"
+	"github.com/suborbital/appspec/request"
 )
 
 type ctxKey int

@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/sat/engine/runtime"
-	"github.com/suborbital/velocity/scheduler"
 )
 
 func (d *defaultAPI) ReturnResultHandler() runtime.HostFn {

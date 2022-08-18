@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/velocity/server/request"
 )
 
 // Exec takes input bytes, executes the loaded Runnable, and returns the result

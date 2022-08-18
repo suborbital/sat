@@ -3,6 +3,7 @@ package sat
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -10,15 +11,15 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/grav/discovery/local"
-	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/sat/engine/moduleref"
+	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/bus/discovery/local"
+	"github.com/suborbital/deltav/bus/transport/websocket"
+	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/sat/engine/runtime"
 	"github.com/suborbital/sat/sat/executor"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/scheduler"
 
 	"github.com/suborbital/sat/sat/process"
 )
@@ -33,7 +34,7 @@ type Sat struct {
 
 	config    *Config
 	vektor    *vk.Server
-	grav      *grav.Grav
+	bus       *bus.Bus
 	transport *websocket.Transport
 	exec      *executor.Executor
 	log       *vlog.Logger
@@ -58,9 +59,9 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		return nil, errors.Wrap(err, "failed to executor.New")
 	}
 
-	var runnable *moduleref.WasmModuleRef
-	if config.Runnable != nil && len(config.Runnable.ModuleRef.Data) > 0 {
-		runnable = moduleref.RefWithData(config.Runnable.ModuleRef.Name, config.Runnable.ModuleRef.FQFN, config.Runnable.ModuleRef.Data)
+	var runnable *tenant.WasmModuleRef
+	if config.Module != nil && len(config.Module.WasmRef.Data) > 0 {
+		runnable = tenant.NewWasmModuleRef(config.Module.WasmRef.Name, config.Module.WasmRef.FQMN, config.Module.WasmRef.Data)
 	} else {
 		ref, err := refFromFilename("", "", config.RunnableArg)
 		if err != nil {
@@ -115,7 +116,7 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		vk.UseQuietRoutes("/meta/metrics"),
 	)
 
-	// if a transport is configured, enable grav and metrics endpoints, otherwise enable server mode
+	// if a transport is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if sat.transport != nil {
 		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
 		sat.vektor.GET("/meta/metrics", sat.metricsHandler())
@@ -169,13 +170,13 @@ func (s *Sat) Shutdown() error {
 	// this is needed to ensure a safe withdraw from the constellation/mesh
 
 	if s.transport != nil {
-		if err := s.grav.Withdraw(); err != nil {
+		if err := s.bus.Withdraw(); err != nil {
 			s.log.Warn("encountered error during Withdraw, will proceed:", err.Error())
 		}
 
 		time.Sleep(time.Second * 3)
 
-		if err := s.grav.Stop(); err != nil {
+		if err := s.bus.Stop(); err != nil {
 			s.log.Warn("encountered error during Stop, will proceed:", err.Error())
 		}
 	}
@@ -196,23 +197,23 @@ func (s *Sat) Shutdown() error {
 func (s *Sat) setupGrav() error {
 	// configure Grav to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
-	s.grav = grav.New(
-		grav.UseBelongsTo(s.config.Identifier),
-		grav.UseInterests(s.config.JobType),
-		grav.UseLogger(s.config.Logger),
-		grav.UseMeshTransport(s.transport),
-		grav.UseDiscovery(local.New()),
-		grav.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
+	s.bus = bus.New(
+		bus.UseBelongsTo(s.config.Identifier),
+		bus.UseInterests(s.config.JobType),
+		bus.UseLogger(s.config.Logger),
+		bus.UseMeshTransport(s.transport),
+		bus.UseDiscovery(local.New()),
+		bus.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
 	)
 
 	// set up the Executor to listen for jobs and handle them
-	s.exec.UseGrav(s.grav)
+	s.exec.UseBus(s.bus)
 
 	if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
 		return errors.Wrap(err, "executor.ListenAndRun")
 	}
 
-	if err := connectStaticPeers(s.config.Logger, s.grav); err != nil {
+	if err := connectStaticPeers(s.config.Logger, s.bus); err != nil {
 		return errors.Wrap(err, "failed to connectStaticPeers")
 	}
 
@@ -224,11 +225,20 @@ func (s *Sat) testServer() *vk.Server {
 	return s.vektor
 }
 
-func refFromFilename(name, fqfn, filename string) (*moduleref.WasmModuleRef, error) {
+func refFromFilename(name, fqmn, filename string) (*tenant.WasmModuleRef, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to os.Open")
 	}
 
-	return moduleref.RefWithReader(name, fqfn, file), nil
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to ReadAll")
+	}
+
+	ref := tenant.NewWasmModuleRef(name, fqmn, data)
+
+	return ref, nil
 }

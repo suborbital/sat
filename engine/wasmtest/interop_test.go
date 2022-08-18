@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/sat/engine"
-	"github.com/suborbital/velocity/scheduler"
 )
 
 func TestWasmCacheGetSetRustToSwift(t *testing.T) {

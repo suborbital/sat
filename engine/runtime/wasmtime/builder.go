@@ -3,14 +3,14 @@ package runtimewasmtime
 import (
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
+	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine/moduleref"
 	"github.com/suborbital/sat/engine/runtime"
 )
 
 // WasmtimeBuilder is a Wasmer implementation of the instanceBuilder interface
 type WasmtimeBuilder struct {
-	ref     *moduleref.WasmModuleRef
+	ref     *tenant.WasmModuleRef
 	hostFns []runtime.HostFn
 	module  *wasmtime.Module
 	engine  *wasmtime.Engine
@@ -18,7 +18,7 @@ type WasmtimeBuilder struct {
 }
 
 // NewBuilder creates a new WasmtimeBuilder
-func NewBuilder(ref *moduleref.WasmModuleRef, api api.HostAPI) runtime.RuntimeBuilder {
+func NewBuilder(ref *tenant.WasmModuleRef, api api.HostAPI) runtime.RuntimeBuilder {
 	w := &WasmtimeBuilder{
 		ref:     ref,
 		hostFns: api.HostFunctions(),
@@ -63,15 +63,10 @@ func (w *WasmtimeBuilder) New() (runtime.RuntimeInstance, error) {
 
 func (w *WasmtimeBuilder) internals() (*wasmtime.Module, *wasmtime.Engine, *wasmtime.Linker, error) {
 	if w.module == nil {
-		moduleBytes, err := w.ref.Bytes()
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "failed to get ref ModuleBytes")
-		}
-
 		engine := wasmtime.NewEngine()
 
 		// Compiles the module
-		mod, err := wasmtime.NewModule(engine, moduleBytes)
+		mod, err := wasmtime.NewModule(engine, w.ref.Data)
 		if err != nil {
 			return nil, nil, nil, errors.Wrap(err, "failed to NewModule")
 		}

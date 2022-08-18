@@ -11,9 +11,9 @@ require (
 	github.com/second-state/WasmEdge-go v0.9.2
 	github.com/sethvargo/go-envconfig v0.7.0
 	github.com/stretchr/testify v1.7.1
-	github.com/suborbital/grav v0.5.1-0.20220608154018-168a56834e6f
+	github.com/suborbital/appspec v0.0.0-20220815195423-8ee35f6159fd
+	github.com/suborbital/deltav v0.0.0-00010101000000-000000000000
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
-	github.com/suborbital/velocity v0.0.0-00010101000000-000000000000
 	github.com/testcontainers/testcontainers-go v0.13.0
 	github.com/wasmerio/wasmer-go v1.0.4
 	go.opentelemetry.io/otel v1.7.0
@@ -74,14 +74,14 @@ require (
 	go.opentelemetry.io/proto/otlp v0.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d // indirect
-	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220615171555-694bf12d69de // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 	golang.org/x/sys v0.0.0-20220614162138-6c1b26c55098 // indirect
 	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
 	google.golang.org/genproto v0.0.0-20220615141314-f1464d18c36b // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/suborbital/velocity => github.com/suborbital/atmo v0.4.4-0.20220617185831-7df484e934f8
+replace github.com/suborbital/deltav => github.com/suborbital/atmo v0.4.4-0.20220815195905-7e2c9b8eec32

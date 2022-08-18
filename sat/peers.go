@@ -7,11 +7,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/grav/grav"
+	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/vektor/vlog"
 )
 
-func connectStaticPeers(logger *vlog.Logger, g *grav.Grav) error {
+func connectStaticPeers(logger *vlog.Logger, b *bus.Bus) error {
 	count := 0
 	var err error
 
@@ -23,7 +23,7 @@ func connectStaticPeers(logger *vlog.Logger, g *grav.Grav) error {
 			logger.Debug("connecting to static peer", e)
 
 			for count < 10 {
-				if err = g.ConnectEndpoint(e); err != nil {
+				if err = b.ConnectEndpoint(e); err != nil {
 					logger.Error(errors.Wrap(err, "failed to ConnectEndpoint, will retry"))
 					count++
 

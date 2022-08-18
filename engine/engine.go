@@ -2,9 +2,9 @@ package engine
 
 import (
 	"github.com/pkg/errors"
+	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine/moduleref"
-	"github.com/suborbital/velocity/scheduler"
 )
 
 // Engine is a Webassembly job scheduler with configurable host APIs
@@ -29,7 +29,7 @@ func NewWithAPI(api api.HostAPI) *Engine {
 }
 
 // Register registers a Wasm module by reference
-func (e *Engine) Register(name string, ref *moduleref.WasmModuleRef, opts ...scheduler.Option) scheduler.JobFunc {
+func (e *Engine) Register(name string, ref *tenant.WasmModuleRef, opts ...scheduler.Option) scheduler.JobFunc {
 	runner := newRunnerFromRef(ref, e.api)
 
 	return e.Scheduler.Register(name, runner, opts...)

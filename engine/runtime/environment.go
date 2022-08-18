@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/scheduler"
 )
 
 /*

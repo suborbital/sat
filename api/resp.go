@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/pkg/errors"
+	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/sat/engine/runtime"
-	"github.com/suborbital/velocity/capabilities"
 )
 
 func (d *defaultAPI) RespSetHeaderHandler() runtime.HostFn {

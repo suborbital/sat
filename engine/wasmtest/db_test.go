@@ -9,10 +9,10 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
+	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/sat/api"
 	"github.com/suborbital/sat/engine"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/capabilities"
 
 	_ "github.com/lib/pq"
 
