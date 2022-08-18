@@ -27,7 +27,7 @@ type watcher struct {
 
 type instance struct {
 	fqfn    string
-	metrics *sat.MetricsResponse
+	metrics *sat.WorkerMetricsResponse
 	uuid    string
 	pid     int
 }
@@ -133,7 +133,7 @@ func (w *watcher) report() *watcherReport {
 }
 
 // getReport sends a request on localhost to the given port to fetch metrics
-func getReport(port string) (*sat.MetricsResponse, error) {
+func getReport(port string) (*sat.WorkerMetricsResponse, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%s/meta/metrics", port), nil)
 
 	resp, err := client.Do(req)
@@ -144,7 +144,7 @@ func getReport(port string) (*sat.MetricsResponse, error) {
 	defer resp.Body.Close()
 	metricsJSON, _ := ioutil.ReadAll(resp.Body)
 
-	metrics := &sat.MetricsResponse{}
+	metrics := &sat.WorkerMetricsResponse{}
 	if err := json.Unmarshal(metricsJSON, metrics); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal metrics response")
 	}

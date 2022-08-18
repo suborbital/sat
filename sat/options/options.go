@@ -15,7 +15,9 @@ type Options struct {
 	ControlPlane *ControlPlane `env:",noinit"`
 	Ident        *Ident        `env:",noinit"`
 	Version      *Version      `env:",noinit"`
-	TracerConfig TracerConfig  `env:",prefix=SAT_TRACER_"`
+
+	TracerConfig  TracerConfig  `env:",prefix=SAT_TRACER_"`
+	MetricsConfig MetricsConfig `env:",prefix=SAT_METRICS_"`
 }
 
 // ControlPlane is a struct, so we can use a pointer, so we can check whether it's been set in config. If set, it holds
@@ -32,6 +34,16 @@ type Ident struct {
 // Version holds the runnable version. It's a struct, so we can optionally have it set to nil. Config uses it.
 type Version struct {
 	Data string `env:"SAT_RUNNABLE_VERSION"`
+}
+
+type MetricsConfig struct {
+	Type        string             `env:"TYPE,default=none"`
+	ServiceName string             `env:"SERVICENAME,default=sat"`
+	OtelMetrics *OtelMetricsConfig `env:",prefix=OTEL_,noinit"`
+}
+
+type OtelMetricsConfig struct {
+	Endpoint string `env:"ENDPOINT"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options

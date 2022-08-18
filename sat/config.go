@@ -43,6 +43,7 @@ type Config struct {
 	Logger          *vlog.Logger
 	ProcUUID        string
 	TracerConfig    satOptions.TracerConfig
+	MetricsConfig   satOptions.MetricsConfig
 }
 
 type satInfo struct {
@@ -179,6 +180,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		ControlPlaneUrl: controlPlane,
 		Logger:          logger,
 		TracerConfig:    opts.TracerConfig,
+		MetricsConfig:   opts.MetricsConfig,
 		ProcUUID:        string(opts.ProcUUID),
 	}
 

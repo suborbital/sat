@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/suborbital/sat/sat"
+	"github.com/suborbital/sat/sat/metrics"
 )
 
 // If you are using a control plane server, set the following environment variables before running
@@ -19,7 +20,7 @@ import (
 func main() {
 	config, _ := sat.ConfigFromRunnableArg("com.suborbital.acmeco#default::embed@v1.0.0")
 
-	s, _ := sat.New(config, nil)
+	s, _ := sat.New(config, nil, metrics.SetupNoopMetrics())
 
 	for i := 1; i < 100; i++ {
 		resp, err := s.Exec([]byte("world!"))

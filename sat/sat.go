@@ -20,6 +20,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 
+	"github.com/suborbital/sat/sat/metrics"
 	"github.com/suborbital/sat/sat/process"
 )
 
@@ -39,6 +40,7 @@ type Sat struct {
 	exec      *executor.Executor
 	log       *vlog.Logger
 	tracer    trace.Tracer
+	metrics   metrics.Metrics
 }
 
 type loggerScope struct {
@@ -51,7 +53,7 @@ var headless = false
 // New initializes Reactr, Vektor, and Grav in a Sat instance
 // if config.UseStdin is true, only Reactr will be created
 // if traceProvider is nil, the default NoopTraceProvider will be used
-func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
+func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
 	wruntime.UseInternalLogger(config.Logger)
 
 	exec := executor.NewWithGrav(config.Logger, nil, nil)
@@ -81,10 +83,6 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		transport = websocket.New()
 	}
 
-	if traceProvider == nil {
-		traceProvider = trace.NewNoopTracerProvider()
-	}
-
 	sat := &Sat{
 		jobName:   config.JobType,
 		config:    config,
@@ -92,6 +90,7 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 		exec:      exec,
 		log:       config.Logger,
 		tracer:    traceProvider.Tracer("sat"),
+		metrics:   mtx,
 	}
 
 	// no need to continue setup if we're in stdin mode, so return here
@@ -111,7 +110,7 @@ func New(config *Config, traceProvider trace.TracerProvider) (*Sat, error) {
 	// if a transport is configured, enable grav and metrics endpoints, otherwise enable server mode
 	if sat.transport != nil {
 		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
-		sat.vektor.GET("/meta/metrics", sat.metricsHandler())
+		sat.vektor.GET("/meta/metrics", sat.workerMetricsHandler())
 	} else {
 		// allow any HTTP method
 		sat.vektor.GET("/*any", sat.handler(exec))
@@ -176,7 +175,6 @@ func (s *Sat) Shutdown(ctx context.Context, sig os.Signal) error {
 	// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
 	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
-
 	if s.transport != nil {
 		if err := s.grav.Withdraw(); err != nil {
 			s.log.Warn("encountered error during Withdraw, will proceed:", err.Error())
