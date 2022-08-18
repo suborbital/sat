@@ -135,7 +135,12 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 
 		if diskRunnable != nil {
 			if opts.Ident != nil && opts.Version != nil {
-				module.FQMN = fqmn.FromParts(opts.Ident.Data, module.Namespace, module.Name, opts.Version.Data)
+				FQMN, err := fqmn.FromParts(opts.Ident.Data, module.Namespace, module.Name, opts.Version.Data)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to fqmn.FromParts")
+				}
+
+				module.FQMN = FQMN
 			}
 		}
 

@@ -732,8 +732,8 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/suborbital/appspec v0.0.0-20220815195423-8ee35f6159fd h1:buoT/RAA0UHDxGrvDu7YrKQYjMOaCXunbhs3bXmPpNs=
-github.com/suborbital/appspec v0.0.0-20220815195423-8ee35f6159fd/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
+github.com/suborbital/appspec v0.0.1 h1:UaUPJs/rpjVfyA/4snyF+gRnVTj+HTWDj7pQ6zlYaQc=
+github.com/suborbital/appspec v0.0.1/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
 github.com/suborbital/atmo v0.4.4-0.20220815195905-7e2c9b8eec32 h1:wQpjCw9RaDtJ3nizAvI7yXFBvXo5z6NRBiVbHv2yF8o=
 github.com/suborbital/atmo v0.4.4-0.20220815195905-7e2c9b8eec32/go.mod h1:WcH4p8X2qQJ+YbfRUIXoNtOQ8Yar/1iEGkTe6H7zrGM=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8 h1:1GUeXgAL4969UAg0IuZg0tKvYlsxiDd4v/MOwYIKD2U=
