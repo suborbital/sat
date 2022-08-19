@@ -8,7 +8,7 @@ require (
 	github.com/sethvargo/go-envconfig v0.8.2
 	github.com/stretchr/testify v1.8.0
 	github.com/suborbital/atmo v0.4.7
-	github.com/suborbital/go-kit v0.0.0-20220613153033-a68f1f6508c6
+	github.com/suborbital/go-kit v0.0.0-20220818163003-dd0165092ef3
 	github.com/suborbital/grav v0.5.1
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.6.0
