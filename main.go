@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/deltav/signaler"
+
 	"github.com/suborbital/sat/sat"
 	"github.com/suborbital/sat/sat/process"
 )
