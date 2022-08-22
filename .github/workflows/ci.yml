@@ -43,7 +43,7 @@ jobs:
 
       - name: Build sat
         run: |
-          make satq
+          make sat
 
       - name: Run stdin test
         run: |
