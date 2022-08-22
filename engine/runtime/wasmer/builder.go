@@ -2,10 +2,12 @@ package runtimewasmer
 
 import (
 	"github.com/pkg/errors"
+	"github.com/wasmerio/wasmer-go/wasmer"
+
 	"github.com/suborbital/appspec/tenant"
+
 	"github.com/suborbital/sat/api"
 	"github.com/suborbital/sat/engine/runtime"
-	"github.com/wasmerio/wasmer-go/wasmer"
 )
 
 // WasmerBuilder is a Wasmer implementation of the instanceBuilder interface

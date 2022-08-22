@@ -8,16 +8,16 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/pkg/errors"
-	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine"
-	"github.com/suborbital/vektor/vlog"
-
 	_ "github.com/lib/pq"
-
+	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/suborbital/appspec/capabilities"
+	"github.com/suborbital/vektor/vlog"
+
+	"github.com/suborbital/sat/api"
+	"github.com/suborbital/sat/engine"
 )
 
 func setupPostgresContainer(ctx context.Context, schema string) (testcontainers.Container, string, error) {

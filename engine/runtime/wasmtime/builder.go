@@ -3,7 +3,9 @@ package runtimewasmtime
 import (
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/appspec/tenant"
+
 	"github.com/suborbital/sat/api"
 	"github.com/suborbital/sat/engine/runtime"
 )

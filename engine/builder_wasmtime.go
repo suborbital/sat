@@ -5,6 +5,7 @@ package engine
 
 import (
 	"github.com/suborbital/appspec/tenant"
+
 	"github.com/suborbital/sat/api"
 	"github.com/suborbital/sat/engine/runtime"
 	runtimewasmtime "github.com/suborbital/sat/engine/runtime/wasmtime"

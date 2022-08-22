@@ -5,6 +5,7 @@ import (
 
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/sat/engine/runtime"
 )
 

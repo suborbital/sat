@@ -16,11 +16,11 @@ import (
 	"github.com/suborbital/deltav/bus/discovery/local"
 	"github.com/suborbital/deltav/bus/transport/websocket"
 	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/sat/engine/runtime"
-	"github.com/suborbital/sat/sat/executor"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 
+	"github.com/suborbital/sat/engine/runtime"
+	"github.com/suborbital/sat/sat/executor"
 	"github.com/suborbital/sat/sat/process"
 )
 

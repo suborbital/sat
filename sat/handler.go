@@ -9,8 +9,9 @@ import (
 
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/sat/sat/executor"
 	"github.com/suborbital/vektor/vk"
+
+	"github.com/suborbital/sat/sat/executor"
 )
 
 func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {

@@ -17,10 +17,11 @@ import (
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+
+	"github.com/suborbital/sat/api"
+	"github.com/suborbital/sat/engine"
 )
 
 var (
