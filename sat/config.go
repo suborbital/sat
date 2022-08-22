@@ -18,7 +18,7 @@ import (
 	"github.com/suborbital/appspec/fqmn"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/deltav/fqfn"
-	"github.com/suborbital/deltav/server/options"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/vektor/vlog"
 
 	satOptions "github.com/suborbital/sat/sat/options"

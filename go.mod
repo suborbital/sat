@@ -84,4 +84,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/suborbital/deltav => github.com/suborbital/atmo v0.4.4-0.20220815195905-7e2c9b8eec32
+replace github.com/suborbital/deltav => github.com/suborbital/atmo v0.4.4-0.20220822174658-5e84e02e8737
