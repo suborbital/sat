@@ -8,19 +8,19 @@ package runtimewasmedge
 import (
 	"github.com/pkg/errors"
 	"github.com/second-state/WasmEdge-go/wasmedge"
+	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine/moduleref"
 	"github.com/suborbital/sat/engine/runtime"
 )
 
 // WasmEdgeBuilder is a WasmEdge implementation of the instanceBuilder interface
 type WasmEdgeBuilder struct {
-	ref     *moduleref.WasmModuleRef
+	ref     *tenant.WasmModuleRef
 	hostFns []runtime.HostFn
 }
 
 // NewBuilder create a new WasmEdgeBuilder
-func NewBuilder(ref *moduleref.WasmModuleRef, hostAPI api.HostAPI) runtime.RuntimeBuilder {
+func NewBuilder(ref *tenant.WasmModuleRef, hostAPI api.HostAPI) runtime.RuntimeBuilder {
 	w := &WasmEdgeBuilder{
 		ref:     ref,
 		hostFns: hostAPI.HostFunctions(),

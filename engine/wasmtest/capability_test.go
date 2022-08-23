@@ -4,10 +4,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/suborbital/appspec/capabilities"
+	"github.com/suborbital/deltav/scheduler"
+
 	"github.com/suborbital/sat/api"
 	"github.com/suborbital/sat/engine"
-	"github.com/suborbital/velocity/capabilities"
-	"github.com/suborbital/velocity/scheduler"
 )
 
 func TestDisabledHTTP(t *testing.T) {

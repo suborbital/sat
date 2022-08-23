@@ -3,8 +3,9 @@ package runtimewasmer
 import (
 	"fmt"
 
-	"github.com/suborbital/sat/engine/runtime"
 	"github.com/wasmerio/wasmer-go/wasmer"
+
+	"github.com/suborbital/sat/engine/runtime"
 )
 
 // WasmerHostFn describes a host function callable from within a Runnable module

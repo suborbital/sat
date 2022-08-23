@@ -10,17 +10,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine"
-	"github.com/suborbital/sat/engine/moduleref"
+	"github.com/suborbital/appspec/capabilities"
+	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/appspec/tenant/executable"
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/options"
+	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/capabilities"
-	"github.com/suborbital/velocity/directive/executable"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/options"
-	"github.com/suborbital/velocity/server/request"
+
+	"github.com/suborbital/sat/api"
+	"github.com/suborbital/sat/engine"
 )
 
 var (
@@ -33,10 +34,10 @@ var (
 // functions with a single call, ensuring there is no difference between them to the caller.
 type Executor struct {
 	engine   *engine.Engine
-	grav     *grav.Grav
+	bus      *bus.Bus
 	capCache map[string]*capabilities.Capabilities
 
-	pod *grav.Pod
+	pod *bus.Pod
 
 	log *vlog.Logger
 }
@@ -58,7 +59,7 @@ func New(log *vlog.Logger, config capabilities.CapabilityConfig) (*Executor, err
 }
 
 // Do executes a local or remote job.
-func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
+func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb bus.MsgFunc) (interface{}, error) {
 	if e.engine == nil {
 		return nil, ErrExecutorNotConfigured
 	}
@@ -71,31 +72,31 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 
 	res := e.engine.Do(scheduler.NewJob(jobType, req))
 
-	e.Send(grav.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
+	e.Send(bus.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
 
 	result, err := res.Then()
 	if err != nil {
-		e.Send(grav.NewMsgWithParentID(scheduler.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
+		e.Send(bus.NewMsgWithParentID(scheduler.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
 	} else {
 		resultJSON, err := json.Marshal(result)
 		if err != nil {
 			e.log.Error(errors.Wrap(err, "failed to Marshal executor result"))
 		}
 
-		e.Send(grav.NewMsgWithParentID(scheduler.MsgTypeReactrResult, ctx.RequestID(), resultJSON))
+		e.Send(bus.NewMsgWithParentID(scheduler.MsgTypeReactrResult, ctx.RequestID(), resultJSON))
 	}
 
 	return result, err
 }
 
-// UseGrav sets a Grav instance to use (in case one was not provided initially)
-func (e *Executor) UseGrav(g *grav.Grav) {
-	e.grav = g
-	e.pod = g.Connect()
+// UseGrav sets a Bus instance to use (in case one was not provided initially)
+func (e *Executor) UseBus(b *bus.Bus) {
+	e.bus = b
+	e.pod = b.Connect()
 }
 
 // Register registers a Runnable.
-func (e *Executor) Register(jobType string, ref *moduleref.WasmModuleRef, opts ...scheduler.Option) error {
+func (e *Executor) Register(jobType string, ref *tenant.WasmModuleRef, opts ...scheduler.Option) error {
 	if e.engine == nil {
 		return ErrExecutorNotConfigured
 	}
@@ -137,18 +138,18 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 }
 
 // ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job.
-func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
+func (e *Executor) ListenAndRun(msgType string, run func(bus.Message, interface{}, error)) error {
 	if e.engine == nil {
 		return ErrExecutorNotConfigured
 	}
 
-	e.engine.ListenAndRun(e.grav.Connect(), msgType, run)
+	e.engine.ListenAndRun(e.bus.Connect(), msgType, run)
 
 	return nil
 }
 
 // Send sends a message on the configured Pod.
-func (e *Executor) Send(msg grav.Message) *grav.MsgReceipt {
+func (e *Executor) Send(msg bus.Message) *bus.MsgReceipt {
 	if e.pod == nil {
 		return nil
 	}
@@ -178,7 +179,7 @@ func (e *Executor) Metrics() (*scheduler.ScalerMetrics, error) {
 	return &metrics, nil
 }
 
-func connectStaticPeers(log *vlog.Logger, g *grav.Grav, opts *options.Options) {
+func connectStaticPeers(log *vlog.Logger, g *bus.Bus, opts *options.Options) {
 	if strings.TrimSpace(opts.StaticPeers) == "" {
 		return
 	}

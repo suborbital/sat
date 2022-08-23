@@ -732,10 +732,10 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/suborbital/atmo v0.4.4-0.20220617185831-7df484e934f8 h1:jvbdWdOUBZ4N0TJ9tpg1PTdhQce7fBR6JUsP7Me1d6o=
-github.com/suborbital/atmo v0.4.4-0.20220617185831-7df484e934f8/go.mod h1:XMeSkZ6Sfu38dB3G/m7K+MdxHHOv8RqXECN+7HTNtr0=
-github.com/suborbital/grav v0.5.1-0.20220608154018-168a56834e6f h1:Vudsj5L8f1t3oU1VJxMFgj6dMUu6HA0tXZ87nbfef48=
-github.com/suborbital/grav v0.5.1-0.20220608154018-168a56834e6f/go.mod h1:Jqo0ER6Boe1vhZWI4mWfcrs6c7nlRsRMoFBRm4BB1qY=
+github.com/suborbital/appspec v0.0.1 h1:UaUPJs/rpjVfyA/4snyF+gRnVTj+HTWDj7pQ6zlYaQc=
+github.com/suborbital/appspec v0.0.1/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
+github.com/suborbital/atmo v0.4.4-0.20220822174658-5e84e02e8737 h1:ZlnFK7KvNXqC9BPOf03hkG3hYoG0ukH3KMXGBbTQfkU=
+github.com/suborbital/atmo v0.4.4-0.20220822174658-5e84e02e8737/go.mod h1:jo+cCQ0xUJ56Pec+PNBizYlS9msAagVY8IAruEZnl0Y=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8 h1:1GUeXgAL4969UAg0IuZg0tKvYlsxiDd4v/MOwYIKD2U=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8/go.mod h1:/OSnPYtTDFwGHnoFaBYpWQu1moH1X8Vo/y4BVU3+oWM=
 github.com/syndtr/gocapability v0.0.0-20170704070218-db04d3cc01c8/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
@@ -868,8 +868,6 @@ golang.org/x/mod v0.1.1-0.20191107180719-034126e5016b/go.mod h1:QqPTAvyqsEbceGzB
 golang.org/x/mod v0.2.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.3.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.4.2/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
-golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 h1:kQgndtyPBW/JIYERgdxfwMYh3AVStj88WQTlNDi2a+o=
-golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3/go.mod h1:3p9vT2HGsQu2K1YbXdKPJLVgG5VJdoTa1poYQBtP1AY=
 golang.org/x/net v0.0.0-20180724234803-3673e40ba225/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20180826012351-8a410e7b638d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20180906233101-161cd47e91fd/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
@@ -1038,6 +1036,7 @@ golang.org/x/time v0.0.0-20190308202827-9d24e82272b4/go.mod h1:tRJNPiyCQ0inRvYxb
 golang.org/x/time v0.0.0-20191024005414-555d28b269f0/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 h1:M73Iuj3xbbb9Uk1DYhzydthsj6oOd6l9bpuFcNoUvTs=
+golang.org/x/time v0.0.0-20220224211638-0e9765cccd65/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/tools v0.0.0-20180221164845-07fd8470d635/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 golang.org/x/tools v0.0.0-20181030221726-6c7e314b6563/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=

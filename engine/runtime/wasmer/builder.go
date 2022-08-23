@@ -2,15 +2,17 @@ package runtimewasmer
 
 import (
 	"github.com/pkg/errors"
-	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine/moduleref"
-	"github.com/suborbital/sat/engine/runtime"
 	"github.com/wasmerio/wasmer-go/wasmer"
+
+	"github.com/suborbital/appspec/tenant"
+
+	"github.com/suborbital/sat/api"
+	"github.com/suborbital/sat/engine/runtime"
 )
 
 // WasmerBuilder is a Wasmer implementation of the instanceBuilder interface
 type WasmerBuilder struct {
-	ref     *moduleref.WasmModuleRef
+	ref     *tenant.WasmModuleRef
 	hostFns []runtime.HostFn
 	module  *wasmer.Module
 	store   *wasmer.Store
@@ -18,7 +20,7 @@ type WasmerBuilder struct {
 }
 
 // NewBuilder creates a new WasmerBuilder
-func NewBuilder(ref *moduleref.WasmModuleRef, API api.HostAPI) runtime.RuntimeBuilder {
+func NewBuilder(ref *tenant.WasmModuleRef, API api.HostAPI) runtime.RuntimeBuilder {
 	w := &WasmerBuilder{
 		ref:     ref,
 		hostFns: API.HostFunctions(),
@@ -71,16 +73,11 @@ func (w *WasmerBuilder) New() (runtime.RuntimeInstance, error) {
 
 func (w *WasmerBuilder) internals() (*wasmer.Module, *wasmer.Store, *wasmer.ImportObject, error) {
 	if w.module == nil {
-		moduleBytes, err := w.ref.Bytes()
-		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "failed to get ref ModuleBytes")
-		}
-
 		engine := wasmer.NewEngine()
 		store := wasmer.NewStore(engine)
 
 		// Compiles the module
-		mod, err := wasmer.NewModule(store, moduleBytes)
+		mod, err := wasmer.NewModule(store, w.ref.Data)
 		if err != nil {
 			return nil, nil, nil, errors.Wrap(err, "failed to NewModule")
 		}

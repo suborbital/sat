@@ -2,15 +2,17 @@ package engine
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 
-	"github.com/suborbital/sat/api"
-	"github.com/suborbital/sat/engine/moduleref"
-	"github.com/suborbital/sat/engine/runtime"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/request"
-
 	"github.com/pkg/errors"
+
+	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/deltav/scheduler"
+
+	"github.com/suborbital/sat/api"
+	"github.com/suborbital/sat/engine/runtime"
 )
 
 //wasmRunner represents a wasm-based runnable
@@ -25,7 +27,12 @@ func newRunnerFromFile(filepath string, api api.HostAPI) (*wasmRunner, error) {
 		return nil, errors.Wrap(err, "failed to Open")
 	}
 
-	ref := moduleref.RefWithReader("", "", file)
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to ReadAll")
+	}
+
+	ref := tenant.NewWasmModuleRef("", "", data)
 
 	runner := newRunnerFromRef(ref, api)
 
@@ -33,7 +40,7 @@ func newRunnerFromFile(filepath string, api api.HostAPI) (*wasmRunner, error) {
 }
 
 // newRunnerFromRef creates a wasmRunner from a moduleRef
-func newRunnerFromRef(ref *moduleref.WasmModuleRef, api api.HostAPI) *wasmRunner {
+func newRunnerFromRef(ref *tenant.WasmModuleRef, api api.HostAPI) *wasmRunner {
 	builder := runtimeBuilder(ref, api)
 
 	environment := runtime.NewEnvironment(builder)
