@@ -108,33 +108,8 @@ func (e *Executor) Register(jobType string, ref *tenant.WasmModuleRef, opts ...s
 
 // DesiredStepState calculates the state as it should be for a particular step's 'with' clause.
 func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
-	if len(step.With) == 0 {
-		return nil, ErrDesiredStateNotGenerated
-	}
-
-	desiredState := map[string][]byte{}
-	aliased := map[string]bool{}
-
-	// first go through the 'with' clause and load all of the appropriate aliased values.
-	for alias, key := range step.With {
-		val, exists := req.State[key]
-		if !exists {
-			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
-		}
-
-		desiredState[alias] = val
-		aliased[key] = true
-	}
-
-	// next, go through the rest of the original state and load the non-aliased values.
-	for key, val := range req.State {
-		_, skip := aliased[key]
-		if !skip {
-			desiredState[key] = val
-		}
-	}
-
-	return desiredState, nil
+	// this is no longer needed in the Executor, will be removed from DeltaV in the future
+	return nil, ErrDesiredStateNotGenerated
 }
 
 // ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job.
