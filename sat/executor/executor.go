@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/appspec/capabilities"
+	"github.com/suborbital/appspec/fqmn"
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
@@ -119,11 +120,40 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 	for alias, key := range step.With {
 		val, exists := req.State[key]
 		if !exists {
-			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
+			// if the literal key is not in state,
+			// iterate through all the state keys and
+			// parse them as FQMNs, and match with any
+			// that have matching names.
+
+			found := false
+
+			for stateKey := range req.State {
+				stateFQMN, err := fqmn.Parse(stateKey)
+				if err != nil {
+					// if the state key isn't an FQMN, that's fine, move along
+					continue
+				}
+
+				if stateFQMN.Name == key {
+					found = true
+
+					val = req.State[stateKey]
+
+					desiredState[alias] = val
+					aliased[stateKey] = true
+
+					break
+				}
+			}
+
+			if !found {
+				return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
+			}
+		} else {
+			desiredState[alias] = val
+			aliased[key] = true
 		}
 
-		desiredState[alias] = val
-		aliased[key] = true
 	}
 
 	// next, go through the rest of the original state and load the non-aliased values.
