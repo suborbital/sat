@@ -120,7 +120,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 			module = cpModule
 
 			// TODO: find an appropriate value for the version parameter
-			rendered, err := appsource.ResolveCapabilitiesFromSource(appClient, FQMN.Tenant, FQMN.Namespace, 0, logger)
+			rendered, err := appsource.ResolveCapabilitiesFromSource(appClient, FQMN.Tenant, FQMN.Namespace, logger)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to capabilities.Render")
 			}

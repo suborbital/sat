@@ -11,7 +11,7 @@ require (
 	github.com/second-state/WasmEdge-go v0.9.2
 	github.com/sethvargo/go-envconfig v0.7.0
 	github.com/stretchr/testify v1.7.1
-	github.com/suborbital/appspec v0.0.1
+	github.com/suborbital/appspec v0.0.2-0.20220902180808-a833dcd7ac23
 	github.com/suborbital/deltav v0.0.0-00010101000000-000000000000
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
 	github.com/testcontainers/testcontainers-go v0.13.0
