@@ -12,7 +12,7 @@ require (
 	github.com/sethvargo/go-envconfig v0.7.0
 	github.com/stretchr/testify v1.7.1
 	github.com/suborbital/appspec v0.0.2-0.20220902180808-a833dcd7ac23
-	github.com/suborbital/deltav v0.0.0-00010101000000-000000000000
+	github.com/suborbital/e2core v0.0.0-00010101000000-000000000000
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
 	github.com/testcontainers/testcontainers-go v0.13.0
 	github.com/wasmerio/wasmer-go v1.0.4
@@ -38,7 +38,6 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v20.10.11+incompatible // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
@@ -84,4 +83,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/suborbital/deltav => github.com/suborbital/atmo v0.4.4-0.20220822174658-5e84e02e8737
+replace github.com/suborbital/e2core => github.com/suborbital/atmo v0.4.4-0.20220915165825-411983a382ac

@@ -8,9 +8,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/appspec/request"
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/deltav/server/coordinator/sequence"
+	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/e2core/server/coordinator/sequence"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -67,7 +67,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 		resp = result.(*request.CoordinatedResponse)
 	}
 
-	// package everything up and shuttle it back to the parent (deltav)
+	// package everything up and shuttle it back to the parent (e2core)
 	fnr := &sequence.FnResult{
 		FQFN:     msg.Type(),
 		Key:      step.Exec.ExecutableMod.Key(), // to support groups, we'll need to find the correct CallableFn in the list

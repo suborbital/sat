@@ -11,7 +11,7 @@ import (
 
 	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/appspec/request"
-	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/e2core/scheduler"
 
 	"github.com/suborbital/sat/api"
 	"github.com/suborbital/sat/engine"
