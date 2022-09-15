@@ -3,7 +3,7 @@ package runtime
 import (
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 var ErrExportNotFound = errors.New("the requested export is not found in the module")
