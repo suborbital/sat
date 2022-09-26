@@ -293,6 +293,7 @@ github.com/frankban/quicktest v1.11.3/go.mod h1:wRf/ReqHper53s+kmmSZizM8NamnL3IM
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/fsnotify/fsnotify v1.5.1 h1:mZcQUHVQUQWoPXXtuf9yuEXKudkV2sx1E06UadKWpgI=
+github.com/fsnotify/fsnotify v1.5.1/go.mod h1:T3375wBYaZdLLcVNkcVbzGHY7f1l/uK5T5Ai1i3InKU=
 github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa/go.mod h1:KnogPXtdwXqoenmZCw6S+25EAm2MkxbG0deNDu4cbSA=
 github.com/garyburd/redigo v0.0.0-20150301180006-535138d7bcd7/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -731,10 +732,16 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/suborbital/appspec v0.0.1 h1:UaUPJs/rpjVfyA/4snyF+gRnVTj+HTWDj7pQ6zlYaQc=
+github.com/suborbital/appspec v0.0.1/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
+github.com/suborbital/appspec v0.0.2-0.20220902174034-7c11df87f698 h1:HPT0BCQhfHbMQPvnz2ubK82dZeofyVQ1tGfA4NoKYFY=
+github.com/suborbital/appspec v0.0.2-0.20220902174034-7c11df87f698/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
+github.com/suborbital/appspec v0.0.2-0.20220902175858-6a0656aec661 h1:tLtc8z+F1+j2aGQW0i0QxJyUECl9Fcpq1CxnXB1y3+8=
+github.com/suborbital/appspec v0.0.2-0.20220902175858-6a0656aec661/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
 github.com/suborbital/appspec v0.0.2-0.20220902180808-a833dcd7ac23 h1:QOdMwAVshiNkOJS2r4qjgcJJyj5EhQ4WYdgwjDEcDFk=
 github.com/suborbital/appspec v0.0.2-0.20220902180808-a833dcd7ac23/go.mod h1:viKHmM+uNDW+3XuZKGhZ3jZmStpomLVANscTNQVO9B0=
-github.com/suborbital/appspec v0.0.3 h1:ki+Y7V/7xSqMXJNeS5G02+iDuwKXHGLZbLbVT5itHYk=
-github.com/suborbital/appspec v0.0.3/go.mod h1:viKHmM+uNDW+3XuZKGhZ3jZmStpomLVANscTNQVO9B0=
+github.com/suborbital/appspec v0.0.4-0.20220926144904-84498e00d6fc h1:5XZtoJJwgaz1mnj/ewPix0fgLVT98U1yTo4L/xO1fZo=
+github.com/suborbital/appspec v0.0.4-0.20220926144904-84498e00d6fc/go.mod h1:viKHmM+uNDW+3XuZKGhZ3jZmStpomLVANscTNQVO9B0=
 github.com/suborbital/atmo v0.4.4-0.20220822174658-5e84e02e8737 h1:ZlnFK7KvNXqC9BPOf03hkG3hYoG0ukH3KMXGBbTQfkU=
 github.com/suborbital/atmo v0.4.4-0.20220822174658-5e84e02e8737/go.mod h1:jo+cCQ0xUJ56Pec+PNBizYlS9msAagVY8IAruEZnl0Y=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8 h1:1GUeXgAL4969UAg0IuZg0tKvYlsxiDd4v/MOwYIKD2U=
@@ -1011,6 +1018,7 @@ golang.org/x/sys v0.0.0-20210426230700-d19ff857e887/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210510120138-977fb7262007/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210616094352-59db8d763f22/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20211124211545-fe61309f8881/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
