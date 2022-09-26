@@ -11,7 +11,6 @@ require (
 	github.com/second-state/WasmEdge-go v0.9.2
 	github.com/sethvargo/go-envconfig v0.7.0
 	github.com/stretchr/testify v1.7.1
-	github.com/suborbital/appspec v0.0.3
 	github.com/suborbital/deltav v0.0.0-00010101000000-000000000000
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
 	github.com/testcontainers/testcontainers-go v0.13.0
@@ -26,6 +25,7 @@ require (
 )
 
 require (
+	github.com/suborbital/appspec 84498e00d6fcc387cfd799d34775ddc57e42f82c
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/Microsoft/hcsshim v0.8.23 // indirect

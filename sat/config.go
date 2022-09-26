@@ -19,6 +19,7 @@ import (
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/deltav/fqfn"
 	"github.com/suborbital/deltav/options"
+	"github.com/suborbital/sat/auth"
 	"github.com/suborbital/vektor/vlog"
 
 	satOptions "github.com/suborbital/sat/sat/options"
@@ -88,7 +89,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		useControlPlane = true
 	}
 
-	appClient := client.NewHTTPSource(controlPlane, nil)
+	appClient := client.NewHTTPSource(controlPlane, auth.NewAuthToken(opts.EnvToken))
 	caps := capabilities.DefaultConfigWithLogger(logger)
 
 	if useControlPlane {
