@@ -1,4 +1,4 @@
-package auth
+package sat
 
 import "github.com/suborbital/appspec/system"
 
