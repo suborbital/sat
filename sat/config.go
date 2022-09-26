@@ -12,10 +12,10 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/appspec/appsource"
-	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/appspec/fqmn"
+	"github.com/suborbital/appspec/system"
+	"github.com/suborbital/appspec/system/client"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/deltav/fqfn"
 	"github.com/suborbital/deltav/options"
@@ -120,7 +120,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 			module = cpModule
 
 			// TODO: find an appropriate value for the version parameter
-			rendered, err := appsource.ResolveCapabilitiesFromSource(appClient, FQMN.Tenant, FQMN.Namespace, logger)
+			rendered, err := system.ResolveCapabilitiesFromSource(appClient, FQMN.Tenant, FQMN.Namespace, logger)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to capabilities.Render")
 			}
