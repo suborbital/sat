@@ -19,9 +19,9 @@ import (
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/deltav/fqfn"
 	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/sat/auth"
 	"github.com/suborbital/vektor/vlog"
 
+	"github.com/suborbital/sat/auth"
 	satOptions "github.com/suborbital/sat/sat/options"
 )
 
