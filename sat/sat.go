@@ -12,10 +12,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/appspec/tenant"
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/bus/discovery/local"
-	"github.com/suborbital/deltav/bus/transport/websocket"
-	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/bus/discovery/local"
+	"github.com/suborbital/e2core/bus/transport/websocket"
+	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 

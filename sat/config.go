@@ -17,8 +17,8 @@ import (
 	"github.com/suborbital/appspec/system"
 	"github.com/suborbital/appspec/system/client"
 	"github.com/suborbital/appspec/tenant"
-	"github.com/suborbital/deltav/fqfn"
-	"github.com/suborbital/deltav/options"
+	"github.com/suborbital/e2core/fqfn"
+	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/vektor/vlog"
 
 	satOptions "github.com/suborbital/sat/sat/options"

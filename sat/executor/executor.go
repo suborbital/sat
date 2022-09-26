@@ -14,9 +14,9 @@ import (
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 
@@ -108,7 +108,7 @@ func (e *Executor) Register(jobType string, ref *tenant.WasmModuleRef, opts ...s
 
 // DesiredStepState calculates the state as it should be for a particular step's 'with' clause.
 func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
-	// this is no longer needed in the Executor, will be removed from DeltaV in the future
+	// this is no longer needed in the Executor, will be removed from e2core in the future
 	return nil, ErrDesiredStateNotGenerated
 }
 
