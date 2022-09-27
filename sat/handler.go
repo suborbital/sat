@@ -12,6 +12,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 
 	"github.com/suborbital/sat/sat/executor"
+	"github.com/suborbital/sat/sat/metrics"
 )
 
 func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
@@ -21,6 +22,8 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 		))
 		defer span.End()
 
+		s.metrics.FunctionExecutions.Add(spanCtx, 1)
+
 		ctx.Context = spanCtx
 
 		req, err := request.FromVKRequest(r, ctx)
@@ -28,6 +31,8 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 			ctx.Log.Error(errors.Wrap(err, "failed to FromVKRequest"))
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
+
+		t := metrics.NewTimer()
 
 		var runErr scheduler.RunErr
 
@@ -45,6 +50,7 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 			s.log.Error(errors.Wrap(err, "failed to exec.Do"))
 			return nil, vk.E(http.StatusInternalServerError, "unknown error")
 		}
+		s.metrics.FunctionTime.Record(spanCtx, t.Observe(), attribute.String("id", req.ID))
 
 		if result == nil {
 			s.log.Debug("fn", s.jobName, "returned a nil result")
