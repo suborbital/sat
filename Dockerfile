@@ -4,8 +4,8 @@ WORKDIR /go/sat
 COPY go.* ./
 RUN go mod download
 
-COPY main.go .
 COPY Makefile .
+COPY *.go ./
 COPY ./sat ./sat
 COPY ./engine ./engine
 COPY ./api ./api
