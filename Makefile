@@ -33,22 +33,6 @@ test:
 
 int: constd
 	go test -v ./tests --tags=integration
-# CONSTD TARGETS
-
-constd:
-	go build -o .bin/constd -tags wasmtime,netgo ./constd
-
-constd/install:
-	go install -tags wasmtime,netgo ./constd
-
-constd/static:
-	go build -o .bin/constd -tags wasmtime,netgo -ldflags="-extldflags=-static" ./constd
-
-constd/docker: constd
-	CONSTD_ATMO_VERSION=dev CONSTD_SAT_VERSION=dev .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
-
-constd/metal: constd
-	CONSTD_EXEC_MODE=metal .bin/constd $(PWD)/constd/example-project/runnables.wasm.zip
 
 constd/metal/otel/hc: constd
 	ATMO_TRACER_TYPE="honeycomb" \

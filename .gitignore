@@ -5,4 +5,7 @@ traces/*
 .DS_Store
 .vscode
 
+node_modules
+target
+
 log.txt

@@ -32,7 +32,7 @@ func setupOtelMetrics(ctx context.Context, config options.MetricsConfig) (Metric
 		return Metrics{}, errors.Wrap(err, "otel metrics grpc connection")
 	}
 
-	err = observability.OtelMeter(ctx, conn, otelCollectionPeriod)
+	err = observability.OtelMeter(ctx, conn, observability.MeterConfig{CollectPeriod: otelCollectionPeriod})
 	if err != nil {
 		return Metrics{}, errors.Wrap(err, "observability.OtelMeter")
 	}

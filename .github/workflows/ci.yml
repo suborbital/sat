@@ -45,10 +45,6 @@ jobs:
         run: |
           make sat
 
-      - name: Build constd
-        run: |
-          make constd
-
       - name: Run stdin test
         run: |
           echo "world" | .bin/sat --stdin ./examples/hello-echo/hello-echo.wasm

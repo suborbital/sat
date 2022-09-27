@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
+	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/vektor/vk"
 )
 

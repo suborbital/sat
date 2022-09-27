@@ -7,11 +7,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/atmo/atmo/coordinator/executor"
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/vektor/vk"
 
+	"github.com/suborbital/sat/sat/executor"
 	"github.com/suborbital/sat/sat/metrics"
 )
 
@@ -34,7 +34,8 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 
 		t := metrics.NewTimer()
 
-		var runErr rt.RunErr
+		var runErr scheduler.RunErr
+
 		result, err := exec.Do(s.jobName, req, ctx, nil)
 		if err != nil {
 			if errors.As(err, &runErr) {

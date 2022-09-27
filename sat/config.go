@@ -12,12 +12,13 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
-	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/atmo/fqfn"
-	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/appspec/capabilities"
+	"github.com/suborbital/appspec/fqmn"
+	"github.com/suborbital/appspec/system"
+	"github.com/suborbital/appspec/system/client"
+	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/e2core/fqfn"
+	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/vektor/vlog"
 
 	satOptions "github.com/suborbital/sat/sat/options"
@@ -33,9 +34,9 @@ type Config struct {
 	RunnableArg     string
 	JobType         string
 	PrettyName      string
-	Runnable        *directive.Runnable
+	Module          *tenant.Module
 	Identifier      string
-	CapConfig       rcap.CapabilityConfig
+	CapConfig       capabilities.CapabilityConfig
 	Port            int
 	UseStdin        bool
 	ControlPlaneUrl string
@@ -59,7 +60,7 @@ func ConfigFromArgs() (*Config, error) {
 	args := flag.Args()
 
 	if len(args) < 1 {
-		return nil, errors.New("missing argument: runnable (path, URL or FQFN)")
+		return nil, errors.New("missing argument: module (path, URL or FQMN)")
 	}
 
 	runnableArg := args[0]
@@ -73,7 +74,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		vlog.AppMeta(satInfo{SatVersion: SatDotVersion}),
 	)
 
-	var runnable *directive.Runnable
+	var module *tenant.Module
 
 	opts, err := satOptions.Resolve(envconfig.OsLookuper())
 	if err != nil {
@@ -88,19 +89,18 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		useControlPlane = true
 	}
 
-	appClient := appsource.NewHTTPSource(controlPlane)
-	caps := rcap.DefaultConfigWithLogger(logger)
+	appClient := client.NewHTTPSource(controlPlane, NewAuthToken(opts.EnvToken))
+	caps := capabilities.DefaultConfigWithLogger(logger)
 
 	if useControlPlane {
-		// configure the appSource not to wait if the controlPlane isn't available
-		atmoOpts := options.Options{Logger: logger, Wait: &wait, Headless: &headless}
+		opts := options.NewWithModifiers(options.UseLogger(logger))
 
-		if err = appClient.Start(atmoOpts); err != nil {
+		if err = appClient.Start(opts); err != nil {
 			return nil, errors.Wrap(err, "failed to appSource.Start")
 		}
 	}
 
-	// next, handle the runnable arg being a URL, an FQFN, or a path on disk
+	// next, handle the module arg being a URL, an FQMN, or a path on disk
 	if isURL(runnableArg) {
 		logger.Debug("fetching module from URL")
 		tmpFile, err := downloadFromURL(runnableArg)
@@ -109,49 +109,55 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		}
 
 		runnableArg = tmpFile
-	} else if FQFN := fqfn.Parse(runnableArg); FQFN.Identifier != "" {
+	} else if FQMN, err := fqmn.Parse(runnableArg); err == nil {
 		if useControlPlane {
 			logger.Debug("fetching module from control plane")
 
-			cpRunnable, err := appClient.FindRunnable(runnableArg, opts.EnvToken)
+			cpModule, err := appClient.GetModule(runnableArg)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to FindRunnable")
 			}
 
-			runnable = cpRunnable
+			module = cpModule
 
-			rendered, err := capabilities.ResolveFromSource(appClient, FQFN.Identifier, FQFN.Namespace, FQFN.Version, logger)
+			// TODO: find an appropriate value for the version parameter
+			rendered, err := system.ResolveCapabilitiesFromSource(appClient, FQMN.Tenant, FQMN.Namespace, logger)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to capabilities.Render")
 			}
 
-			caps = rendered
+			caps = *rendered
 		}
 	} else {
-		diskRunnable, err := findRunnableDotYaml(runnableArg)
+		diskRunnable, err := findModuleDotYaml(runnableArg)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to findRunnable")
 		}
 
 		if diskRunnable != nil {
 			if opts.Ident != nil && opts.Version != nil {
-				runnable.FQFN = fqfn.FromParts(opts.Ident.Data, runnable.Namespace, runnable.Name, opts.Version.Data)
+				FQMN, err := fqmn.FromParts(opts.Ident.Data, module.Namespace, module.Name, opts.Version.Data)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to fqmn.FromParts")
+				}
+
+				module.FQMN = FQMN
 			}
 		}
 
-		runnable = diskRunnable
+		module = diskRunnable
 	}
 
 	// set some defaults in the case we're not running in an application
 	portInt, _ := strconv.Atoi(string(opts.Port))
 	jobType := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
-	FQFN := fqfn.Parse(jobType)
+	FQMN := fqfn.Parse(jobType)
 	prettyName := jobType
 
 	// modify configuration if we ARE running as part of an application
-	if runnable != nil && runnable.FQFN != "" {
-		jobType = runnable.FQFN
-		FQFN = fqfn.Parse(runnable.FQFN)
+	if module != nil && module.FQMN != "" {
+		jobType = module.FQMN
+		FQMN = fqfn.Parse(module.FQMN)
 
 		prettyName = fmt.Sprintf("%s-%s", jobType, opts.ProcUUID[:6])
 
@@ -161,8 +167,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 			vlog.AppMeta(app{prettyName}),
 		)
 
-		logger.Info("configuring", jobType)
-		logger.Info("joining app", FQFN.Identifier)
+		logger.Debug("configuring", jobType)
+		logger.Debug("joining app", FQMN.Identifier)
 	} else {
 		logger.Debug("configuring", jobType)
 	}
@@ -172,8 +178,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		RunnableArg:     runnableArg,
 		JobType:         jobType,
 		PrettyName:      prettyName,
-		Runnable:        runnable,
-		Identifier:      FQFN.Identifier,
+		Module:          module,
+		Identifier:      FQMN.Identifier,
 		CapConfig:       caps,
 		Port:            portInt,
 		UseStdin:        useStdin,
@@ -187,24 +193,24 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	return c, nil
 }
 
-func findRunnableDotYaml(runnableArg string) (*directive.Runnable, error) {
+func findModuleDotYaml(runnableArg string) (*tenant.Module, error) {
 	filename := filepath.Base(runnableArg)
-	runnableFilepath := strings.Replace(runnableArg, filename, ".runnable.yml", -1)
+	moduleFilepath := strings.Replace(runnableArg, filename, ".module.yml", -1)
 
-	if _, err := os.Stat(runnableFilepath); err != nil {
-		// .runnable.yaml doesn't exist, don't bother returning error
+	if _, err := os.Stat(moduleFilepath); err != nil {
+		// .module.yaml doesn't exist, don't bother returning error
 		return nil, nil
 	}
 
-	runnableBytes, err := os.ReadFile(runnableFilepath)
+	runnableBytes, err := os.ReadFile(moduleFilepath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ReadFile")
 	}
 
-	runnable := &directive.Runnable{}
-	if err := yaml.Unmarshal(runnableBytes, runnable); err != nil {
+	module := &tenant.Module{}
+	if err := yaml.Unmarshal(runnableBytes, module); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal")
 	}
 
-	return runnable, nil
+	return module, nil
 }

@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/vektor/vk"
 )
 
 type WorkerMetricsResponse struct {
-	Scheduler rt.ScalerMetrics `json:"scheduler"`
+	Scheduler scheduler.ScalerMetrics `json:"scheduler"`
 }
 
 func (s *Sat) workerMetricsHandler() vk.HandlerFunc {

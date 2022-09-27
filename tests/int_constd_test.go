@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const atmoPort = 53091
+const e2corePort = 53091
 
 // ConstDIntegrationSuite will test @todo complete this.
 type ConstDIntegrationSuite struct {
@@ -52,7 +52,7 @@ func (i *ConstDIntegrationSuite) SetupSuite() {
 	i.cmd = exec.CommandContext(ctx, constdExecPath, exampleZip)
 	i.cmd.Stdout = os.Stdout
 	i.cmd.Stderr = os.Stdout
-	i.cmd.Env = append(os.Environ(), fmt.Sprintf("CONSTD_ATMO_PORT=%d", atmoPort), "CONSTD_EXEC_MODE=metal")
+	i.cmd.Env = append(os.Environ(), fmt.Sprintf("CONSTD_ATMO_PORT=%d", e2corePort), "CONSTD_EXEC_MODE=metal")
 
 	err = i.cmd.Start()
 	i.Require().NoError(err)
@@ -99,7 +99,7 @@ func (i *ConstDIntegrationSuite) TestSatEndpoints() {
 		Timeout: 2 * time.Second,
 	}
 
-	baseUrl := fmt.Sprintf("http://localhost:%d", atmoPort)
+	baseUrl := fmt.Sprintf("http://localhost:%d", e2corePort)
 
 	for _, tCase := range tcs {
 		i.Run(tCase.name, func() {
