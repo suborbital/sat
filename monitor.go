@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/suborbital/vektor/vlog"
+
 	"github.com/suborbital/sat/sat"
 	"github.com/suborbital/sat/sat/process"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type ProcFileMonitor struct {
