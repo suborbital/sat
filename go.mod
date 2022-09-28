@@ -6,7 +6,7 @@ require (
 	github.com/bytecodealliance/wasmtime-go v1.0.0
 	github.com/docker/go-connections v0.4.0
 	github.com/google/uuid v1.3.0
-	github.com/lib/pq v1.10.6
+	github.com/lib/pq v1.10.7
 	github.com/pkg/errors v0.9.1
 	github.com/second-state/WasmEdge-go v0.11.0
 	github.com/sethvargo/go-envconfig v0.8.1
