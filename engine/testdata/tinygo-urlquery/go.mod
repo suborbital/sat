@@ -2,6 +2,6 @@ module vendor.suborbital.network/tinygo-urlquery
 
 replace github.com/suborbital/reactr => ../../../
 
-require github.com/suborbital/reactr v0.14.0
+require github.com/suborbital/reactr v0.15.1
 
 go 1.17
