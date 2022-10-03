@@ -1,13 +1,13 @@
 VERSION = $(shell cat .image-ver)
 
 sat:
-	go build -o .bin/sat -tags netgo,wasmtime .
+	go build -o .bin/sat -tags netgo .
 
 sat/static:
-	go build -o .bin/sat -tags netgo,wasmtime -ldflags="-extldflags=-static" .
+	go build -o .bin/sat -tags netgo -ldflags="-extldflags=-static" .
 
 sat/install:
-	go install -tags netgo,wasmtime .
+	go install -tags netgo .
 
 docker:
 	docker build . -t suborbital/sat:dev
