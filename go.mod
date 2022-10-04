@@ -9,7 +9,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/pkg/errors v0.9.1
 	github.com/second-state/WasmEdge-go v0.11.0
-	github.com/sethvargo/go-envconfig v0.8.1
+	github.com/sethvargo/go-envconfig v0.8.2
 	github.com/stretchr/testify v1.8.0
 	github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1
 	github.com/suborbital/e2core v0.4.4-0.20220927141500-cc009c3a3c36
