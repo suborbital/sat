@@ -17,10 +17,10 @@ require (
 	github.com/suborbital/vektor v0.5.3-0.20220706142315-ee5378e49e18
 	github.com/testcontainers/testcontainers-go v0.14.0
 	github.com/wasmerio/wasmer-go v1.0.4
-	go.opentelemetry.io/otel v1.10.0
-	go.opentelemetry.io/otel/metric v0.32.1
-	go.opentelemetry.io/otel/sdk v1.10.0
-	go.opentelemetry.io/otel/trace v1.10.0
+	go.opentelemetry.io/otel v1.11.1
+	go.opentelemetry.io/otel/metric v0.33.0
+	go.opentelemetry.io/otel/sdk v1.11.1
+	go.opentelemetry.io/otel/trace v1.11.1
 	gopkg.in/yaml.v2 v2.4.0
 )
 
