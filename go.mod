@@ -15,7 +15,7 @@ require (
 	github.com/suborbital/e2core v0.4.4-0.20221006164052-adc475e4ccd0
 	github.com/suborbital/go-kit v0.0.0-20220913125118-e0faaefc95df
 	github.com/suborbital/vektor v0.5.3-0.20220706142315-ee5378e49e18
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/testcontainers/testcontainers-go v0.16.0
 	github.com/wasmerio/wasmer-go v1.0.4
 	go.opentelemetry.io/otel v1.10.0
 	go.opentelemetry.io/otel/metric v0.32.1
