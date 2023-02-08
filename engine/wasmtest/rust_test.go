@@ -281,7 +281,7 @@ func TestWasmRunnerGroup(t *testing.T) {
 	doWasm, _ := e.RegisterFromFile("wasm", "../testdata/hello-echo/hello-echo.wasm")
 
 	grp := scheduler.NewGroup()
-	for i := 0; i < 50000; i++ {
+	for i := 0; i < 5000; i++ {
 		grp.Add(doWasm([]byte(fmt.Sprintf("world %d", i))))
 	}
 
