@@ -1,7 +1,7 @@
 package runtimewasmtime
 
 import (
-	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/bytecodealliance/wasmtime-go/v5"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/sat/engine/runtime"
@@ -85,5 +85,5 @@ func (w *WasmtimeInstance) Close() {
 	// This makes the API simpler as you don't need to explicitly close anything.
 	//
 	// See also:
-	// https://github.com/bytecodealliance/wasmtime-go/blob/main/ffi.go
+	// https://github.com/bytecodealliance/wasmtime-go/v5/blob/main/ffi.go
 }
