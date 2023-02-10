@@ -1,3 +1,3 @@
 package sat
 
-var SatDotVersion = "v0.1.4"
+var SatDotVersion = "v0.2.0"
