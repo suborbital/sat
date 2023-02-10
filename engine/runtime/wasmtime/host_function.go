@@ -3,7 +3,7 @@ package runtimewasmtime
 import (
 	"fmt"
 
-	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/bytecodealliance/wasmtime-go/v5"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/sat/engine/runtime"
