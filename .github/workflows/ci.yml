@@ -66,8 +66,8 @@ jobs:
           curl -s localhost:8080 -d 'world'
 
   release-bin:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, image, lint]
+    # if: startsWith(github.ref, 'refs/tags/v')
+    # needs: [test, image, lint]
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/goreleaser/goreleaser-cross:v1.19
@@ -75,11 +75,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+      # temporary work around
+      - run: git config --system --add safe.directory /__w/sat/sat
+
+      - run: ls -la
+      - run: which git
+      - run: whoami
+      - run: git config --system --list
+      # - run: git config --global --list
+
+      - uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
