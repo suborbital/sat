@@ -47,11 +47,6 @@ builds:
             - CGO_ENABLED=1
             - CC=oa64-clang
             - CXX=oa64-clang++
-  - <<: *build_defaults
-    id: constd
-    main: ./constd
-    binary: constd
-
 changelog:
   skip: true
 
@@ -63,7 +58,3 @@ archives:
     name_template: 'sat-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - sat
-  - id: constd
-    name_template: 'constd-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-    builds:
-      - constd
