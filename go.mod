@@ -1,6 +1,6 @@
 module github.com/suborbital/sat
 
-go 1.19
+go 1.20
 
 require (
 	github.com/bytecodealliance/wasmtime-go/v5 v5.0.0
