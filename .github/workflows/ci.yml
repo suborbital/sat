@@ -74,12 +74,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      # temporary work around
+      - run: git config --system --add safe.directory /__w/sat/sat
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+      - uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --rm-dist
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
