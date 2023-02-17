@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/suborbital/atmo v0.4.7
 	github.com/suborbital/grav v0.5.1
-	github.com/suborbital/reactr v0.15.1
+	github.com/suborbital/reactr v0.15.3-beta1
 	github.com/suborbital/vektor v0.6.0
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.opentelemetry.io/otel v1.7.0
